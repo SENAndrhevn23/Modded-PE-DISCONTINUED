@@ -37,6 +37,50 @@ If you use **MODDED-PE** or add features from this engine into your own project,
 
 
 
+---
+
+## 🧪 Performance Testing
+
+### Engine Stress Test Results
+
+- **Windows**: ~30K NPS  
+- **Linux**: ~60K NPS  
+
+### Recommended Best Settings
+
+- **Windows**: 16M NPS  
+- **Linux**: 32M NPS  
+
+---
+
+## 📅 Engine Info
+
+- **Creation Date**: 2026-02-14  
+- **Last Update**: ????-??-??
+
+---
+
+## 🐞 Testing & Bug Reports
+
+If you want to be a **tester** for this engine, feel free to:
+- Test performance
+- Report bugs
+- Open issues with detailed information
+
+Your feedback helps improve the engine.
+
+---
+
+## ⚠️ Notes
+
+- Designed for **advanced users**
+- Large charts may require tuning settings for best performance
+- FFMPEG is required for video features
+
+---
+
+**MODDED-PE** — built for heavy charts 🚀
+
 
 
 

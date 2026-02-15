@@ -65,7 +65,7 @@ If you use **MODDED-PE** or add features from this engine into your own project,
 If you want to be a **tester** for this engine, feel free to:
 - Test performance
 - Report bugs
-- Open issues with detailed information
+- Open issues with detailed information In Github Issue Tab
 
 Your feedback helps improve the engine.
 

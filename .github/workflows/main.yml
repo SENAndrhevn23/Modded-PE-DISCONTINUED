@@ -12,19 +12,20 @@ jobs:
     name: ${{ matrix.name }}
     permissions: write-all
     strategy:
+      fail-fast: false
       matrix:
         include:
-          - name: Windows
-            os: windows-2022
-            target: windows
-            artifactName: Modded-PE-0.0.1_windows
-            artifactPath: export/release/windows/bin/*
-
           - name: Linux
             os: ubuntu-22.04
             target: linux
             artifactName: Modded-PE-0.0.1_linux
             artifactPath: export/release/linux/bin/*
+
+          - name: Windows
+            os: windows-2022
+            target: windows
+            artifactName: Modded-PE-0.0.1_windows
+            artifactPath: export/release/windows/bin/*
 
     runs-on: ${{ matrix.os }}
 
@@ -37,20 +38,21 @@ jobs:
         with:
           haxe-version: 4.3.4
 
+      - name: Set up haxelib path
+        run: haxelib setup $HOME/haxelib
+
       - name: Install Haxe libraries
         run: |
-          haxelib setup ~/haxelib
-          haxelib install lime
-          haxelib install openfl
-          haxelib install hxcpp
+          haxelib install lime --quiet
+          haxelib install openfl --quiet
+          haxelib install hxcpp --quiet
           haxelib list
 
       - name: Lime setup
         run: haxelib run lime setup
 
       - name: Build (${{ matrix.target }})
-        run: |
-          lime build ${{ matrix.target }} -release
+        run: haxelib run lime build ${{ matrix.target }} -release
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

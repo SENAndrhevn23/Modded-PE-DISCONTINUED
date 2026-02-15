@@ -6,94 +6,104 @@ on:
   push:
     branches: [developmentalist]
   workflow_dispatch:
-
 jobs:
-  build:
+  BuildCaches:
     name: ${{ matrix.name }}
     permissions: write-all
     strategy:
-      fail-fast: false
       matrix:
         include:
-          - name: Linux
-            os: ubuntu-22.04
-            target: linux
-            artifactName: Modded-PE-0.0.1_linux
-            artifactPath: export/release/linux/bin/*
+          - name: Desktop
+            os: ubuntu-latest
+            setupScript: sh ./setup/unix.sh
+            CACHE_NAME: Modded-PE.desktop-cache
 
+          - name: Mobile
+            os: macos-latest
+            setupScript: sh ./setup/mobile.sh
+            CACHE_NAME: Modded-PE.mobile-cache
+    uses: ./.github/workflows/dependencies.yml
+    with:
+      os: ${{ matrix.os }}
+      CACHE_NAME: ${{ matrix.CACHE_NAME }}
+      setupScript: ${{ matrix.setupScript }}
+  BuildMacos:
+    name: macos
+    needs: BuildCaches
+    permissions: write-all
+    uses: ./.github/workflows/mac-universal.yml
+    with:
+      exportPath: macos
+      artifactName: Modded-PE_0.0.1_macos
+      artifactPath: export/release/macos/bin/*
+      cachePath: Modded-PE.build-macos
+      cacheLibrariesPath: Modded-PE.mobile-cache
+  BuildDesktop:
+    name: ${{ matrix.name }}
+    needs: BuildCaches
+    permissions: write-all
+    strategy:
+      matrix:
+        include:
           - name: Windows
             os: windows-2022
-            target: windows
-            artifactName: Modded-PE-0.0.1_windows
-            artifactPath: export/release/windows/bin/*
+            buildArgs: windows
+            exportPath: windows
+            artifactName: Modded-PE_0.0.1_windows
+            artifactPath: export\release\windows\bin\*
+            cachePath: Modded-PE.build-windows
+            cacheLibrariesPath: Modded-PE.desktop-cache
+          - name: Linux
+            os: ubuntu-22.04
+            buildArgs: linux
+            exportPath: linux
+            artifactName: Modded-PE_0.0.1_linux
+            artifactPath: export/release/linux/bin/*
+            cachePath: Modded-PE.build-linux
+            cacheLibrariesPath: Modded-PE.desktop-cache
 
-    runs-on: ${{ matrix.os }}
+    uses: ./.github/workflows/build.yml
+    with:
+      name: ${{ matrix.name }}
+      os: ${{ matrix.os }}
+      buildArgs: ${{ matrix.buildArgs }}
+      exportPath: ${{ matrix.exportPath }}
+      artifactName: ${{ matrix.artifactName }}
+      artifactPath: ${{ matrix.artifactPath }}
+      cachePath: ${{matrix.cachePath}}
+      cacheLibrariesPath: ${{ matrix.cacheLibrariesPath }}
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Haxe
-        uses: krdlab/setup-haxe@v1
-        with:
-          haxe-version: 4.3.4
-
-      - name: Set up haxelib
-        run: haxelib setup $HOME/haxelib
-
-      - name: Install Linux dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt update
-          sudo apt install -y \
-            libgl1-mesa-dev \
-            libglu1-mesa-dev \
-            libx11-dev \
-            libxrandr-dev \
-            libxi-dev \
-            libxcursor-dev \
-            libxinerama-dev \
-            libasound2-dev \
-            libpulse-dev
-
-      - name: Install Haxe libraries
-        shell: bash
-        run: |
-          # Core libraries
-          haxelib install lime --quiet
-          haxelib install openfl --quiet
-          haxelib install hxcpp --quiet
-          haxelib install flixel --quiet
-          haxelib install flixel-addons --quiet
-          haxelib install tjson --quiet
-          haxelib install grig.audio --quiet
-          haxelib install linc_luajit --quiet
-          haxelib install hscript-iris --quiet
-          haxelib install hxCodec --quiet
-          haxelib install hxvlc --quiet
-          haxelib install hxdiscord_rpc --quiet
-          haxelib install flxanimate --quiet
-          haxelib install extension-androidtools --quiet
-
-          # Git libraries (replace URLs if needed)
-          haxelib git FlxPartialSound https://github.com/ShadowMario/FlxPartialSound.git
-          haxelib git funkin.vis https://github.com/ShadowMario/funkin.vis.git
-
-      - name: Rebuild hxcpp
-        shell: bash
-        run: haxelib run hxcpp Build.xml || true
-
-      - name: Lime setup
-        shell: bash
-        run: haxelib run lime setup
-
-      - name: Build (${{ matrix.target }})
-        shell: bash
-        run: |
-          haxelib run lime build ${{ matrix.target }} -release -verbose
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.artifactName }}
-          path: ${{ matrix.artifactPath }}
+  BuildMobile:
+    permissions: write-all
+    needs: BuildCaches
+    name: ${{ matrix.name }}
+    strategy:
+      matrix:
+        include:
+          - name: Android
+            os: macos-15
+            buildArgs: "android"
+            exportPath: android
+            artifactName: Modded-PE_0.0.1_android
+            artifactPath: "export/release/android/bin/app/build/outputs/apk/release/*.apk"
+            cachePath: Modded-PE.build-android
+            cacheLibrariesPath: Modded-PE.mobile-cache
+          - name: iOS
+            os: macos-15
+            buildArgs: "ios -nosign"
+            exportPath: ios
+            artifactName: Modded-PE_0.0.1_ios
+            artifactPath: "export/release/ios/build/Release-iphoneos/*.ipa"
+            cachePath: Modded-PE.build-ios
+            cacheLibrariesPath: Modded-PE.mobile-cache
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
+    with:
+      name: ${{ matrix.name }}
+      os: ${{ matrix.os }}
+      buildArgs: ${{ matrix.buildArgs }}
+      exportPath: ${{ matrix.exportPath }}
+      artifactName: ${{ matrix.artifactName }}
+      artifactPath: ${{ matrix.artifactPath }}
+      cachePath: ${{matrix.cachePath}}
+      cacheLibrariesPath: ${{ matrix.cacheLibrariesPath }}

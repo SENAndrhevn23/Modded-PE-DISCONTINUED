@@ -86,11 +86,11 @@ class PlayState extends MusicBeatState
 	private var strumAnim:Bool = ClientPrefs.data.strumAnim;
 
 	public static var ratingStuff:Array<Dynamic> = [
-		["You Suck", 0.2], // From 0% to 19%
-		["Shit", 0.4], // From 20% to 39%
-		["Bad", 0.5], // From 40% to 49%
-		["Bruh", 0.6], // From 50% to 59%
-		["Meh", 0.69], // From 60% to 68%
+		["you suck", 0.2], // From 0% to 19%
+		["trash", 0.4], // From 20% to 39%
+		["bruh", 0.5], // From 40% to 49%
+		["meh", 0.6], // From 50% to 59%
+		["Oke", 0.69], // From 60% to 68%
 		["Nice", 0.7], // 69%
 		["Good", 0.8], // From 70% to 79%
 		["Great!", 0.9], // From 80% to 89%
@@ -731,7 +731,7 @@ class PlayState extends MusicBeatState
 
 		uiGroup.add(infoTxt);
 
-		// Default Value has inherited from PSYCH Engine
+		// Default Value has inherited from HRK Engine
 		var botplayTxtY:Float = timeBar.y + (ClientPrefs.data.downScroll ? -80 : 55);
 		switch (ClientPrefs.data.vsliceBotPlayPlace) {
 			case "Near the Health Bar":
@@ -875,7 +875,8 @@ class PlayState extends MusicBeatState
 
 		skipNoteSplash.active = false;
 
-		
+		if (limitNotes == 0) limitNotes = 2147483647;
+
 		if (cacheNotes > 0) {
 			Sys.println('Caching ${cacheNotes} Notes... 1/3');
 			var cacheNote:Note;
@@ -2986,7 +2987,7 @@ Average NPS in loading: ${numFormat(notes / takenNoteTime, 3)}');
 			
 			if (healthDrain) {
 				if(!drainAccurated) {
-					health = randomize.bool() ? Math.max(0.1e-999999, health * Math.pow(0.99, skipOp)) : health + 0.02 * skipBf;
+					health = randomize.bool() ? Math.max(0.1e-320, health * Math.pow(0.99, skipOp)) : health + 0.02 * skipBf;
 				} else {
 					var max:Null<Int> = FlxMath.maxInt(skipOp, skipBf);
 					for (i in 0...max) {
@@ -4660,7 +4661,7 @@ Average NPS in loading: ${numFormat(notes / takenNoteTime, 3)}');
 
 		if (!ffmpegMode && opVocal) opponentVocals.volume = ClientPrefs.data.bgmVolume;
 		strumPlayAnim(true, note.noteData);
-		if (healthDrain) health = Math.max(0.1e-999999, health * 0.99);
+		if (healthDrain) health = Math.max(0.1e-320, health * 0.99);
 		note.hitByOpponent = true;
 
 		stagesFunc(stage -> stage.goodNoteHit(note));

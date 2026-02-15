@@ -30,32 +30,48 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Haxe
-        uses: krdlab/setup-haxe@v1
+      - uses: krdlab/setup-haxe@v1
         with:
           haxe-version: 4.3.4
 
-      - name: Set up haxelib path
+      - name: Set up haxelib
         run: haxelib setup $HOME/haxelib
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            libgl1-mesa-dev \
+            libglu1-mesa-dev \
+            libx11-dev \
+            libxrandr-dev \
+            libxi-dev \
+            libxcursor-dev \
+            libxinerama-dev \
+            libasound2-dev \
+            libpulse-dev
 
       - name: Install Haxe libraries
         run: |
           haxelib install lime --quiet
           haxelib install openfl --quiet
           haxelib install hxcpp --quiet
-          haxelib list
+
+      - name: Rebuild hxcpp
+        run: haxelib run hxcpp Build.xml
 
       - name: Lime setup
         run: haxelib run lime setup
 
-      - name: Build (${{ matrix.target }})
-        run: haxelib run lime build ${{ matrix.target }} -release
+      - name: Build
+        run: |
+          set -x
+          haxelib run lime build ${{ matrix.target }} -release -verbose
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifactName }}
           path: ${{ matrix.artifactPath }}

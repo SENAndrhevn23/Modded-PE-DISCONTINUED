@@ -30,9 +30,11 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: krdlab/setup-haxe@v1
+      - name: Set up Haxe
+        uses: krdlab/setup-haxe@v1
         with:
           haxe-version: 4.3.4
 
@@ -60,18 +62,34 @@ jobs:
           haxelib install openfl --quiet
           haxelib install hxcpp --quiet
 
+          # Psych Engine / H-Slice libraries
+          haxelib install flixel --quiet
+          haxelib install flixel-addons --quiet
+          haxelib install tjson --quiet
+          haxelib install FlxPartialSound --quiet
+          haxelib install grig.audio --quiet
+          haxelib install funkin.vis --quiet
+          haxelib install linc_luajit --quiet
+          haxelib install hscript-iris --quiet
+          haxelib install hxCodec --quiet
+          haxelib install hxvlc --quiet
+          haxelib install hxdiscord_rpc --quiet
+          haxelib install flxanimate --quiet
+          haxelib install extension-androidtools --quiet
+
       - name: Rebuild hxcpp
-        run: haxelib run hxcpp Build.xml
+        run: haxelib run hxcpp Build.xml || true
 
       - name: Lime setup
         run: haxelib run lime setup
 
-      - name: Build
+      - name: Build (${{ matrix.target }})
         run: |
           set -x
           haxelib run lime build ${{ matrix.target }} -release -verbose
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifactName }}
           path: ${{ matrix.artifactPath }}

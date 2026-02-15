@@ -6,6 +6,7 @@ on:
   push:
     branches: [developmentalist]
   workflow_dispatch:
+
 jobs:
   BuildCaches:
     name: ${{ matrix.name }}
@@ -17,7 +18,6 @@ jobs:
             os: ubuntu-latest
             setupScript: sh ./setup/unix.sh
             CACHE_NAME: Modded-PE.desktop-cache
-
           - name: Mobile
             os: macos-latest
             setupScript: sh ./setup/mobile.sh
@@ -27,21 +27,27 @@ jobs:
       os: ${{ matrix.os }}
       CACHE_NAME: ${{ matrix.CACHE_NAME }}
       setupScript: ${{ matrix.setupScript }}
+
   BuildMacos:
-    name: macos
+    name: macOS Build
     needs: BuildCaches
     permissions: write-all
-    uses: ./.github/workflows/mac-universal.yml
-    with:
-      exportPath: macos
-      artifactName: Modded-PE_0.0.1_macos
-      artifactPath: export/release/macos/bin/*
-      cachePath: Modded-PE.build-macos
-      cacheLibrariesPath: Modded-PE.mobile-cache
+    runs-on: macos-15
+    steps:
+      - name: Call build workflow
+        uses: ./.github/workflows/build.yml
+        with:
+          name: macos
+          os: macos-15
+          buildArgs: mac
+          exportPath: macos
+          artifactName: Modded-PE_0.0.1_macos
+          artifactPath: export/release/macos/bin/*
+          cachePath: Modded-PE.build-macos
+          cacheLibrariesPath: Modded-PE.mobile-cache
+
   BuildDesktop:
-    name: ${{ matrix.name }}
     needs: BuildCaches
-    permissions: write-all
     strategy:
       matrix:
         include:
@@ -61,31 +67,32 @@ jobs:
             artifactPath: export/release/linux/bin/*
             cachePath: Modded-PE.build-linux
             cacheLibrariesPath: Modded-PE.desktop-cache
-
-    uses: ./.github/workflows/build.yml
-    with:
-      name: ${{ matrix.name }}
-      os: ${{ matrix.os }}
-      buildArgs: ${{ matrix.buildArgs }}
-      exportPath: ${{ matrix.exportPath }}
-      artifactName: ${{ matrix.artifactName }}
-      artifactPath: ${{ matrix.artifactPath }}
-      cachePath: ${{matrix.cachePath}}
-      cacheLibrariesPath: ${{ matrix.cacheLibrariesPath }}
+    runs-on: ${{ matrix.os }}
+    permissions: write-all
+    steps:
+      - name: Call build workflow
+        uses: ./.github/workflows/build.yml
+        with:
+          name: ${{ matrix.name }}
+          os: ${{ matrix.os }}
+          buildArgs: ${{ matrix.buildArgs }}
+          exportPath: ${{ matrix.exportPath }}
+          artifactName: ${{ matrix.artifactName }}
+          artifactPath: ${{ matrix.artifactPath }}
+          cachePath: ${{ matrix.cachePath }}
+          cacheLibrariesPath: ${{ matrix.cacheLibrariesPath }}
 
   BuildMobile:
-    permissions: write-all
     needs: BuildCaches
-    name: ${{ matrix.name }}
     strategy:
       matrix:
         include:
           - name: Android
             os: macos-15
-            buildArgs: "android"
+            buildArgs: android
             exportPath: android
             artifactName: Modded-PE_0.0.1_android
-            artifactPath: "export/release/android/bin/app/build/outputs/apk/release/*.apk"
+            artifactPath: export/release/android/bin/app/build/outputs/apk/release/*.apk
             cachePath: Modded-PE.build-android
             cacheLibrariesPath: Modded-PE.mobile-cache
           - name: iOS
@@ -93,17 +100,20 @@ jobs:
             buildArgs: "ios -nosign"
             exportPath: ios
             artifactName: Modded-PE_0.0.1_ios
-            artifactPath: "export/release/ios/build/Release-iphoneos/*.ipa"
+            artifactPath: export/release/ios/build/Release-iphoneos/*.ipa
             cachePath: Modded-PE.build-ios
             cacheLibrariesPath: Modded-PE.mobile-cache
-    uses: ./.github/workflows/build.yml
-    secrets: inherit
-    with:
-      name: ${{ matrix.name }}
-      os: ${{ matrix.os }}
-      buildArgs: ${{ matrix.buildArgs }}
-      exportPath: ${{ matrix.exportPath }}
-      artifactName: ${{ matrix.artifactName }}
-      artifactPath: ${{ matrix.artifactPath }}
-      cachePath: ${{matrix.cachePath}}
-      cacheLibrariesPath: ${{ matrix.cacheLibrariesPath }}
+    runs-on: ${{ matrix.os }}
+    permissions: write-all
+    steps:
+      - name: Call build workflow
+        uses: ./.github/workflows/build.yml
+        with:
+          name: ${{ matrix.name }}
+          os: ${{ matrix.os }}
+          buildArgs: ${{ matrix.buildArgs }}
+          exportPath: ${{ matrix.exportPath }}
+          artifactName: ${{ matrix.artifactName }}
+          artifactPath: ${{ matrix.artifactPath }}
+          cachePath: ${{ matrix.cachePath }}
+          cacheLibrariesPath: ${{ matrix.cacheLibrariesPath }}

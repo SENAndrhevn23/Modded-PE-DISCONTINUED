@@ -9,7 +9,7 @@ on:
 
 jobs:
   BuildCaches:
-    name: ${{ matrix.name }}
+    name: ${{ matrix.name }} Cache
     permissions: write-all
     strategy:
       matrix:
@@ -29,36 +29,23 @@ jobs:
       setupScript: ${{ matrix.setupScript }}
 
   BuildMacos:
-    name: macOS Build
     needs: BuildCaches
-    permissions: write-all
-    runs-on: macos-15
-    steps:
-      - name: Call build workflow
-        uses: ./.github/workflows/build.yml
-        with:
-          name: macos
-          os: macos-15
-          buildArgs: mac
-          exportPath: macos
-          artifactName: Modded-PE_0.0.1_macos
-          artifactPath: export/release/macos/bin/*
-          cachePath: Modded-PE.build-macos
-          cacheLibrariesPath: Modded-PE.mobile-cache
+    uses: ./.github/workflows/build.yml
+    with:
+      name: macos
+      os: macos-15
+      buildArgs: mac
+      exportPath: macos
+      artifactName: Modded-PE_0.0.1_macos
+      artifactPath: export/release/macos/bin/*
+      cachePath: Modded-PE.build-macos
+      cacheLibrariesPath: Modded-PE.mobile-cache
 
   BuildDesktop:
     needs: BuildCaches
     strategy:
       matrix:
         include:
-          - name: Windows
-            os: windows-2022
-            buildArgs: windows
-            exportPath: windows
-            artifactName: Modded-PE_0.0.1_windows
-            artifactPath: export\release\windows\bin\*
-            cachePath: Modded-PE.build-windows
-            cacheLibrariesPath: Modded-PE.desktop-cache
           - name: Linux
             os: ubuntu-22.04
             buildArgs: linux
@@ -67,20 +54,25 @@ jobs:
             artifactPath: export/release/linux/bin/*
             cachePath: Modded-PE.build-linux
             cacheLibrariesPath: Modded-PE.desktop-cache
-    runs-on: ${{ matrix.os }}
-    permissions: write-all
-    steps:
-      - name: Call build workflow
-        uses: ./.github/workflows/build.yml
-        with:
-          name: ${{ matrix.name }}
-          os: ${{ matrix.os }}
-          buildArgs: ${{ matrix.buildArgs }}
-          exportPath: ${{ matrix.exportPath }}
-          artifactName: ${{ matrix.artifactName }}
-          artifactPath: ${{ matrix.artifactPath }}
-          cachePath: ${{ matrix.cachePath }}
-          cacheLibrariesPath: ${{ matrix.cacheLibrariesPath }}
+          - name: Windows
+            os: windows-2022
+            buildArgs: windows
+            exportPath: windows
+            artifactName: Modded-PE_0.0.1_windows
+            artifactPath: export\release\windows\bin\*
+            cachePath: Modded-PE.build-windows
+            cacheLibrariesPath: Modded-PE.desktop-cache
+    needs: BuildCaches
+    uses: ./.github/workflows/build.yml
+    with:
+      name: ${{ matrix.name }}
+      os: ${{ matrix.os }}
+      buildArgs: ${{ matrix.buildArgs }}
+      exportPath: ${{ matrix.exportPath }}
+      artifactName: ${{ matrix.artifactName }}
+      artifactPath: ${{ matrix.artifactPath }}
+      cachePath: ${{ matrix.cachePath }}
+      cacheLibrariesPath: ${{ matrix.cacheLibrariesPath }}
 
   BuildMobile:
     needs: BuildCaches
@@ -103,17 +95,14 @@ jobs:
             artifactPath: export/release/ios/build/Release-iphoneos/*.ipa
             cachePath: Modded-PE.build-ios
             cacheLibrariesPath: Modded-PE.mobile-cache
-    runs-on: ${{ matrix.os }}
-    permissions: write-all
-    steps:
-      - name: Call build workflow
-        uses: ./.github/workflows/build.yml
-        with:
-          name: ${{ matrix.name }}
-          os: ${{ matrix.os }}
-          buildArgs: ${{ matrix.buildArgs }}
-          exportPath: ${{ matrix.exportPath }}
-          artifactName: ${{ matrix.artifactName }}
-          artifactPath: ${{ matrix.artifactPath }}
-          cachePath: ${{ matrix.cachePath }}
-          cacheLibrariesPath: ${{ matrix.cacheLibrariesPath }}
+    needs: BuildCaches
+    uses: ./.github/workflows/build.yml
+    with:
+      name: ${{ matrix.name }}
+      os: ${{ matrix.os }}
+      buildArgs: ${{ matrix.buildArgs }}
+      exportPath: ${{ matrix.exportPath }}
+      artifactName: ${{ matrix.artifactName }}
+      artifactPath: ${{ matrix.artifactPath }}
+      cachePath: ${{ matrix.cachePath }}
+      cacheLibrariesPath: ${{ matrix.cacheLibrariesPath }}

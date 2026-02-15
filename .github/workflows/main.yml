@@ -8,55 +8,52 @@ on:
   workflow_dispatch:
 
 jobs:
-  BuildCaches:
+  build:
     name: ${{ matrix.name }}
-    permissions: write-all
-    strategy:
-      matrix:
-        include:
-          - name: Desktop
-            os: ubuntu-latest
-            setupScript: sh ./setup/unix.sh
-            CACHE_NAME: Modded-PE-0.0.1.desktop-cache
-
-    uses: ./.github/workflows/dependencies.yml
-    with:
-      os: ${{ matrix.os }}
-      CACHE_NAME: ${{ matrix.CACHE_NAME }}
-      setupScript: ${{ matrix.setupScript }}
-
-  BuildDesktop:
-    name: ${{ matrix.name }}
-    needs: BuildCaches
     permissions: write-all
     strategy:
       matrix:
         include:
           - name: Windows
             os: windows-2022
-            buildArgs: windows
-            exportPath: windows
+            target: windows
             artifactName: Modded-PE-0.0.1_windows
-            artifactPath: export\release\windows\bin\*
-            cachePath: Modded-PE-0.0.1.build-windows
-            cacheLibrariesPath: Modded-PE-0.0.1.desktop-cache
+            artifactPath: export/release/windows/bin/*
 
           - name: Linux
             os: ubuntu-22.04
-            buildArgs: linux
-            exportPath: linux
+            target: linux
             artifactName: Modded-PE-0.0.1_linux
             artifactPath: export/release/linux/bin/*
-            cachePath: Modded-PE-0.0.1.build-linux
-            cacheLibrariesPath: Modded-PE-0.0.1.desktop-cache
 
-    uses: ./.github/workflows/build.yml
-    with:
-      name: ${{ matrix.name }}
-      os: ${{ matrix.os }}
-      buildArgs: ${{ matrix.buildArgs }}
-      exportPath: ${{ matrix.exportPath }}
-      artifactName: ${{ matrix.artifactName }}
-      artifactPath: ${{ matrix.artifactPath }}
-      cachePath: ${{ matrix.cachePath }}
-      cacheLibrariesPath: ${{ matrix.cacheLibrariesPath }}
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Haxe
+        uses: krdlab/setup-haxe@v1
+        with:
+          haxe-version: 4.3.4
+
+      - name: Install Haxe libraries
+        run: |
+          haxelib setup ~/haxelib
+          haxelib install lime
+          haxelib install openfl
+          haxelib install hxcpp
+          haxelib list
+
+      - name: Lime setup
+        run: haxelib run lime setup
+
+      - name: Build (${{ matrix.target }})
+        run: |
+          lime build ${{ matrix.target }} -release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifactName }}
+          path: ${{ matrix.artifactPath }}

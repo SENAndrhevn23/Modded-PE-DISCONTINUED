@@ -1,0 +1,116 @@
+name: Build the game
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [developmentalist]
+  workflow_dispatch:
+
+jobs:
+  BuildCaches:
+    name: ${{ matrix.name }}
+    permissions: write-all
+    strategy:
+      matrix:
+        include:
+          - name: Desktop
+            os: ubuntu-latest
+            setupScript: sh ./setup/unix.sh
+            CACHE_NAME: Modded-PE-0.0.1.desktop-cache
+
+          - name: Mobile
+            os: macos-latest
+            setupScript: sh ./setup/mobile.sh
+            CACHE_NAME: Modded-PE-0.0.1.mobile-cache
+
+    uses: ./.github/workflows/dependencies.yml
+    with:
+      os: ${{ matrix.os }}
+      CACHE_NAME: ${{ matrix.CACHE_NAME }}
+      setupScript: ${{ matrix.setupScript }}
+
+  BuildMacos:
+    name: macos
+    needs: BuildCaches
+    permissions: write-all
+    uses: ./.github/workflows/mac-universal.yml
+    with:
+      exportPath: macos
+      artifactName: Modded-PE-0.0.1_macos
+      artifactPath: export/release/macos/bin/*
+      cachePath: Modded-PE-0.0.1.build-macos
+      cacheLibrariesPath: Modded-PE-0.0.1.mobile-cache
+
+  BuildDesktop:
+    name: ${{ matrix.name }}
+    needs: BuildCaches
+    permissions: write-all
+    strategy:
+      matrix:
+        include:
+          - name: Windows
+            os: windows-2022
+            buildArgs: windows
+            exportPath: windows
+            artifactName: Modded-PE-0.0.1_windows
+            artifactPath: export\release\windows\bin\*
+            cachePath: Modded-PE-0.0.1.build-windows
+            cacheLibrariesPath: Modded-PE-0.0.1.desktop-cache
+
+          - name: Linux
+            os: ubuntu-22.04
+            buildArgs: linux
+            exportPath: linux
+            artifactName: Modded-PE-0.0.1_linux
+            artifactPath: export/release/linux/bin/*
+            cachePath: Modded-PE-0.0.1.build-linux
+            cacheLibrariesPath: Modded-PE-0.0.1.desktop-cache
+
+    uses: ./.github/workflows/build.yml
+    with:
+      name: ${{ matrix.name }}
+      os: ${{ matrix.os }}
+      buildArgs: ${{ matrix.buildArgs }}
+      exportPath: ${{ matrix.exportPath }}
+      artifactName: ${{ matrix.artifactName }}
+      artifactPath: ${{ matrix.artifactPath }}
+      cachePath: ${{ matrix.cachePath }}
+      cacheLibrariesPath: ${{ matrix.cacheLibrariesPath }}
+
+  BuildMobile:
+    permissions: write-all
+    needs: BuildCaches
+    name: ${{ matrix.name }}
+    strategy:
+      matrix:
+        include:
+          - name: Android
+            os: macos-15
+            buildArgs: "android"
+            exportPath: android
+            artifactName: Modded-PE-0.0.1_android
+            artifactPath: "export/release/android/bin/app/build/outputs/apk/release/*.apk"
+            cachePath: Modded-PE-0.0.1.build-android
+            cacheLibrariesPath: Modded-PE-0.0.1.mobile-cache
+
+          - name: iOS
+            os: macos-15
+            buildArgs: "ios -nosign"
+            exportPath: ios
+            artifactName: Modded-PE-0.0.1_ios
+            artifactPath: "export/release/ios/build/Release-iphoneos/*.ipa"
+            cachePath: Modded-PE-0.0.1.build-ios
+            cacheLibrariesPath: Modded-PE-0.0.1.mobile-cache
+
+    uses: ./.github/workflows/build.yml
+    secrets: inherit
+    with:
+      name: ${{ matrix.name }}
+      os: ${{ matrix.os }}
+      buildArgs: ${{ matrix.buildArgs }}
+      exportPath: ${{ matrix.exportPath }}
+      artifactName: ${{ matrix.artifactName }}
+      artifactPath: ${{ matrix.artifactPath }}
+      cachePath: ${{ matrix.cachePath }}
+      cacheLibrariesPath: ${{ matrix.cacheLibrariesPath }}

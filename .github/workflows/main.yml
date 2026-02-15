@@ -57,18 +57,16 @@ jobs:
             libpulse-dev
 
       - name: Install Haxe libraries
+        shell: bash
         run: |
+          # Core libraries
           haxelib install lime --quiet
           haxelib install openfl --quiet
           haxelib install hxcpp --quiet
-
-          # Psych Engine / H-Slice libraries
           haxelib install flixel --quiet
           haxelib install flixel-addons --quiet
           haxelib install tjson --quiet
-          haxelib install FlxPartialSound --quiet
           haxelib install grig.audio --quiet
-          haxelib install funkin.vis --quiet
           haxelib install linc_luajit --quiet
           haxelib install hscript-iris --quiet
           haxelib install hxCodec --quiet
@@ -77,15 +75,21 @@ jobs:
           haxelib install flxanimate --quiet
           haxelib install extension-androidtools --quiet
 
+          # Git libraries (replace URLs if needed)
+          haxelib git FlxPartialSound https://github.com/ShadowMario/FlxPartialSound.git
+          haxelib git funkin.vis https://github.com/ShadowMario/funkin.vis.git
+
       - name: Rebuild hxcpp
+        shell: bash
         run: haxelib run hxcpp Build.xml || true
 
       - name: Lime setup
+        shell: bash
         run: haxelib run lime setup
 
       - name: Build (${{ matrix.target }})
+        shell: bash
         run: |
-          set -x
           haxelib run lime build ${{ matrix.target }} -release -verbose
 
       - name: Upload artifact

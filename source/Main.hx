@@ -17,175 +17,123 @@ import openfl.display.StageScaleMode;
 import lime.app.Application;
 import states.TitleState;
 
-#if COPYSTATE_ALLOWED
-import states.CopyState;
-#end
-
 #if linux
 import lime.graphics.Image;
-#end
-
 @:cppInclude('./external/gamemode_client.h')
 @:cppFileCode('
-	#define GAMEMODE_AUTO
+    #define GAMEMODE_AUTO
 ')
+#end
+
+#if windows
+// Windows-specific includes can go here
+#end
+
 class Main extends Sprite
 {
-	var game = {
-		width: 1280,
-		height: 720,
-		initialState: TitleState,
-		zoom: -1.0,
-		framerate: 60,
-		skipSplash: true,
-		startFullscreen: false
-	};
+    var game = {
+        width: 1280,
+        height: 720,
+        initialState: TitleState,
+        zoom: -1.0,
+        framerate: 60,
+        skipSplash: true,
+        startFullscreen: false
+    };
 
-	public static var fpsBg:FPSBg;
-	public static var fpsVar:FPSCounter;
-	public static var debugBuild:Bool;
-	public static var isConsoleAvailable:Bool = true;
-	public static final platform:String = "PCs";
+    public static var fpsBg:FPSBg;
+    public static var fpsVar:FPSCounter;
+    public static var debugBuild:Bool;
+    public static var isConsoleAvailable:Bool = true;
 
-	public static function main():Void
-	{
-		Lib.current.addChild(new Main());
-	}
+    // Platform string for desktops only
+    public static final platform:String = "PCs";
 
-	public function new()
-	{
-		super();
-		debugBuild = #if debug true #else false #end;
+    public static function main():Void
+    {
+        Lib.current.addChild(new Main());
+    }
 
-		try {
-			Sys.stdout().writeString("Console Available!\n");
-		} catch (e:Dynamic) { isConsoleAvailable = false; }
+    public function new()
+    {
+        super();
+        debugBuild = false;
 
-		backend.CrashHandler.init();
+        try {
+            Sys.stdout().writeString("Console Available!\n");
+        } catch (e:Dynamic) {
+            isConsoleAvailable = false;
+        }
 
-		#if windows
-		@:functionCode("
-			#include <windows.h>
-			#include <winuser.h>
-			setProcessDPIAware();
-			DisableProcessWindowsGhosting();
-		")
-		#end
+        backend.CrashHandler.init();
 
-		if (stage != null) init();
-		else addEventListener(Event.ADDED_TO_STAGE, init);
+        if (stage != null) init();
+        else addEventListener(Event.ADDED_TO_STAGE, init);
+    }
 
-		#if hxvlc
-		hxvlc.util.Handle.init(#if (hxvlc >= "1.8.0") ['--no-lua'] #end);
-		#end
-	}
+    private function init(?E:Event):Void
+    {
+        if (hasEventListener(Event.ADDED_TO_STAGE))
+            removeEventListener(Event.ADDED_TO_STAGE, init);
 
-	private function init(?E:Event):Void
-	{
-		if (hasEventListener(Event.ADDED_TO_STAGE))
-			removeEventListener(Event.ADDED_TO_STAGE, init);
+        setupGame();
+    }
 
-		setupGame();
-	}
+    private function setupGame():Void
+    {
+        if (game.zoom == -1.0)
+            game.zoom = 1.0;
 
-	private function setupGame():Void
-	{
-		#if (openfl <= "9.2.0")
-		var stageWidth:Int = Lib.current.stage.stageWidth;
-		var stageHeight:Int = Lib.current.stage.stageHeight;
-		if (game.zoom == -1.0)
-		{
-			var ratioX:Float = stageWidth / game.width;
-			var ratioY:Float = stageHeight / game.height;
-			game.zoom = Math.min(ratioX, ratioY);
-			game.width = Math.ceil(stageWidth / game.zoom);
-			game.height = Math.ceil(stageHeight / game.zoom);
-		}
-		#else
-		if (game.zoom == -1.0) game.zoom = 1.0;
-		#end
+        Mods.loadTopMod();
 
-		#if LUA_ALLOWED
-		Mods.pushGlobalMods();
-		#end
-		Mods.loadTopMod();
+        FlxG.save.bind('funkin', CoolUtil.getSavePath());
+        Highscore.load();
 
-		FlxG.save.bind('funkin', CoolUtil.getSavePath());
-		Highscore.load();
+        Controls.instance = new Controls();
+        ClientPrefs.loadDefaultKeys();
 
-		#if LUA_ALLOWED
-		Lua.set_callbacks_function(cpp.Callable.fromStaticFunction(psychlua.CallbackHandler.call));
-		#end
+        var gameObject = new FlxGame(
+            game.width, game.height,
+            game.initialState,
+            game.framerate, game.framerate,
+            game.skipSplash, game.startFullscreen
+        );
 
-		Controls.instance = new Controls();
-		ClientPrefs.loadDefaultKeys();
-		#if ACHIEVEMENTS_ALLOWED
-		Achievements.load();
-		#end
+        @:privateAccess
+        gameObject._customSoundTray = mikolka.vslice.components.FunkinSoundTray;
 
-		var gameObject = new FlxGame(
-			game.width,
-			game.height,
-			#if COPYSTATE_ALLOWED !CopyState.checkExistingFiles() ? CopyState : #end game.initialState,
-			#if (flixel < "5.0.0") game.zoom, #end
-			game.framerate,
-			game.framerate,
-			game.skipSplash,
-			game.startFullscreen
-		);
+        addChild(gameObject);
 
-		@:privateAccess
-		gameObject._customSoundTray = mikolka.vslice.components.FunkinSoundTray;
+        fpsBg = new FPSBg();
+        fpsVar = new FPSCounter(6, 1, 0xFFFFFF);
+        addChild(fpsBg);
+        addChild(fpsVar);
 
-		addChild(gameObject);
+        Lib.current.stage.align = "tl";
+        Lib.current.stage.scaleMode = StageScaleMode.NO_SCALE;
+        if(fpsVar != null) fpsVar.visible = ClientPrefs.data.showFPS;
+        if(fpsBg != null) fpsBg.visible = ClientPrefs.data.showFPS;
 
-		fpsBg = new FPSBg();
-		fpsVar = new FPSCounter(6, 1, 0xFFFFFF);
+        FlxG.fixedTimestep = false;
+        FlxG.game.focusLostFramerate = 60;
 
-		addChild(fpsBg);
-		addChild(fpsVar);
+        FlxG.signals.gameResized.add(function(w, h)
+        {
+            if (FlxG.cameras != null)
+                for (cam in FlxG.cameras.list)
+                    if (cam != null && cam.filters != null)
+                        resetSpriteCache(cam.flashSprite);
 
-		Lib.current.stage.align = "tl";
-		Lib.current.stage.scaleMode = StageScaleMode.NO_SCALE;
+            if (FlxG.game != null)
+                resetSpriteCache(FlxG.game);
+        });
+    }
 
-		if(fpsVar != null) fpsVar.visible = ClientPrefs.data.showFPS;
-		if(fpsBg != null) fpsBg.visible = ClientPrefs.data.showFPS;
-
-		#if html5
-		FlxG.autoPause = false;
-		FlxG.mouse.visible = false;
-		#end
-
-		FlxG.fixedTimestep = false;
-		FlxG.game.focusLostFramerate = 60;
-		#if web
-		FlxG.keys.preventDefaultKeys.push(TAB);
-		#else
-		FlxG.keys.preventDefaultKeys = [TAB];
-		#end
-
-		#if DISCORD_ALLOWED
-		DiscordClient.prepare();
-		#end
-
-		// shader coords fix
-		FlxG.signals.gameResized.add(function(w, h)
-		{
-			if (FlxG.cameras != null)
-				for (cam in FlxG.cameras.list)
-					if (cam != null && cam.filters != null)
-						resetSpriteCache(cam.flashSprite);
-
-			if (FlxG.game != null)
-				resetSpriteCache(FlxG.game);
-		});
-	}
-
-	static function resetSpriteCache(sprite:Sprite):Void
-	{
-		@:privateAccess {
-			sprite.__cacheBitmap = null;
-			sprite.__cacheBitmapData = null;
-		}
-	}
+    static function resetSpriteCache(sprite:Sprite):Void
+    {
+        @:privateAccess {
+            sprite.__cacheBitmap = null;
+            sprite.__cacheBitmapData = null;
+        }
+    }
 }

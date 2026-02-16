@@ -1,27 +1,19 @@
-name: Build Windows
-
-on:
-  push:
-    branches: [developmentalist]
-  pull_request:
-    branches: [master]
-  workflow_dispatch:
-
 jobs:
   build-windows:
     name: Build Modded-PE for Windows
     runs-on: windows-2022
 
     steps:
-      # 1️⃣ Checkout your repo
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      # 2️⃣ Install Haxe (Windows-only, no RefreshEnv)
-      - name: Install Haxe
-        run: choco install haxe -y
+      - name: Install Haxe 4.3.4
+        shell: powershell
+        run: |
+          choco install haxe --version=4.3.4 -y
+          $env:Path = "${env:ProgramData}\chocolatey\lib\haxe\tools\haxe;%env:Path%"
+          haxe --version
+          haxelib list
 
-      # 3️⃣ Install Lime & OpenFL
       - name: Install Lime & OpenFL
         run: |
           haxelib install lime
@@ -29,15 +21,12 @@ jobs:
           haxelib run lime setup
           haxelib run openfl setup
 
-      # 4️⃣ Clean previous builds
       - name: Clean previous Windows build
         run: lime clean windows
 
-      # 5️⃣ Build Windows
       - name: Build Windows
         run: lime build windows -release
 
-      # 6️⃣ Upload artifact
       - name: Upload Windows build artifact
         uses: actions/upload-artifact@v4
         with:

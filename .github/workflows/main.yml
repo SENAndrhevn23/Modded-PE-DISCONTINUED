@@ -8,54 +8,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  BuildCaches:
-    name: ${{ matrix.name }} Cache
-    permissions: write-all
-    strategy:
-      matrix:
-        include:
-          - name: Desktop
-            os: ubuntu-latest
-            setupScript: sh ./setup/unix.sh
-            CACHE_NAME: Modded-PE.desktop-cache
-          - name: Mobile
-            os: macos-latest
-            setupScript: sh ./setup/mobile.sh
-            CACHE_NAME: Modded-PE.mobile-cache
-    uses: ./.github/workflows/dependencies.yml
-    with:
-      os: ${{ matrix.os }}
-      CACHE_NAME: ${{ matrix.CACHE_NAME }}
-      setupScript: ${{ matrix.setupScript }}
-
-  BuildMacos:
-    needs: BuildCaches
-    uses: ./.github/workflows/build.yml
-    with:
-      name: macos
-      os: macos-15
-      buildArgs: mac
-      exportPath: macos
-      artifactName: Modded-PE_0.0.1_macos
-      artifactPath: export/release/macos/bin/*
-      cachePath: Modded-PE.build-macos
-      cacheLibrariesPath: Modded-PE.mobile-cache
-
-  BuildLinux:
-    needs: BuildCaches
-    uses: ./.github/workflows/build.yml
-    with:
-      name: Linux
-      os: ubuntu-22.04
-      buildArgs: linux
-      exportPath: linux
-      artifactName: Modded-PE_0.0.1_linux
-      artifactPath: export/release/linux/bin/*
-      cachePath: Modded-PE.build-linux
-      cacheLibrariesPath: Modded-PE.desktop-cache
-
   BuildWindows:
-    needs: BuildCaches
+    name: Build Windows
+    runs-on: windows-2022
     uses: ./.github/workflows/build.yml
     with:
       name: Windows
@@ -66,29 +21,3 @@ jobs:
       artifactPath: export\release\windows\bin\*
       cachePath: Modded-PE.build-windows
       cacheLibrariesPath: Modded-PE.desktop-cache
-
-  BuildAndroid:
-    needs: BuildCaches
-    uses: ./.github/workflows/build.yml
-    with:
-      name: Android
-      os: macos-15
-      buildArgs: android
-      exportPath: android
-      artifactName: Modded-PE_0.0.1_android
-      artifactPath: export/release/android/bin/app/build/outputs/apk/release/*.apk
-      cachePath: Modded-PE.build-android
-      cacheLibrariesPath: Modded-PE.mobile-cache
-
-  BuildiOS:
-    needs: BuildCaches
-    uses: ./.github/workflows/build.yml
-    with:
-      name: iOS
-      os: macos-15
-      buildArgs: "ios -nosign"
-      exportPath: ios
-      artifactName: Modded-PE_0.0.1_ios
-      artifactPath: export/release/ios/build/Release-iphoneos/*.ipa
-      cachePath: Modded-PE.build-ios
-      cacheLibrariesPath: Modded-PE.mobile-cache

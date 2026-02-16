@@ -11,13 +11,27 @@ jobs:
   BuildWindows:
     name: Build Windows
     runs-on: windows-2022
-    uses: ./.github/workflows/build.yml
-    with:
-      name: Windows
-      os: windows-2022
-      buildArgs: windows
-      exportPath: windows
-      artifactName: Modded-PE_0.0.1_windows
-      artifactPath: export\release\windows\bin\*
-      cachePath: Modded-PE.build-windows
-      cacheLibrariesPath: Modded-PE.desktop-cache
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Haxe
+        uses: haxe/setup-haxe@v1
+        with:
+          haxe-version: '4.3.0'
+
+      - name: Install dependencies
+        run: haxelib install lime openfl
+
+      - name: Clean build
+        run: lime clean windows
+
+      - name: Build Windows
+        run: lime build windows
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: Modded-PE_0.0.1_windows
+          path: export/release/windows/bin/

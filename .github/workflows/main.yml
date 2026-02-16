@@ -1,4 +1,4 @@
-name: Build the game
+name: Build Windows
 
 on:
   push:
@@ -8,30 +8,38 @@ on:
   workflow_dispatch:
 
 jobs:
-  BuildWindows:
-    name: Build Windows
+  build-windows:
+    name: Build Modded-PE for Windows
     runs-on: windows-2022
 
     steps:
+      # 1️⃣ Checkout your repo
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install Haxe via Chocolatey
+      # 2️⃣ Install Haxe (Windows-only, no RefreshEnv)
+      - name: Install Haxe
         run: choco install haxe -y
 
+      # 3️⃣ Install Lime & OpenFL
       - name: Install Lime & OpenFL
         run: |
           haxelib install lime
           haxelib install openfl
+          haxelib run lime setup
+          haxelib run openfl setup
 
-      - name: Clean build
+      # 4️⃣ Clean previous builds
+      - name: Clean previous Windows build
         run: lime clean windows
 
+      # 5️⃣ Build Windows
       - name: Build Windows
-        run: lime build windows
+        run: lime build windows -release
 
-      - name: Upload artifact
+      # 6️⃣ Upload artifact
+      - name: Upload Windows build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Modded-PE_0.0.1_windows
-          path: export/release/windows/bin/
+          name: Modded-PE_Windows
+          path: export/release/windows/bin/*

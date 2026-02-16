@@ -16,13 +16,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Setup Haxe
-        uses: haxe/setup-haxe@v1
-        with:
-          haxe-version: '4.3.0'
+      - name: Install Haxe
+        run: |
+          choco install haxe -y
+          refreshenv
 
-      - name: Install dependencies
-        run: haxelib install lime openfl
+      - name: Install Haxelib dependencies
+        run: |
+          haxelib install lime
+          haxelib install openfl
 
       - name: Clean build
         run: lime clean windows
@@ -31,7 +33,7 @@ jobs:
         run: lime build windows
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Modded-PE_0.0.1_windows
           path: export/release/windows/bin/

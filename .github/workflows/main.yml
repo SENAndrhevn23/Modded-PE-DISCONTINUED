@@ -1,10 +1,10 @@
 name: Build the game
 
 on:
-  pull_request:
-    branches: [master]
   push:
     branches: [developmentalist]
+  pull_request:
+    branches: [master]
   workflow_dispatch:
 
 jobs:
@@ -16,12 +16,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install Haxe
-        run: |
-          choco install haxe -y
-          refreshenv
+      - name: Install Haxe via Chocolatey
+        run: choco install haxe -y
 
-      - name: Install Haxelib dependencies
+      - name: Install Lime & OpenFL
         run: |
           haxelib install lime
           haxelib install openfl

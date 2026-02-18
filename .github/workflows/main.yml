@@ -1,43 +1,100 @@
-name: Build Modded-PE for Windows
+name: Build MODDED-PE
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, experimental ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, experimental ]
   workflow_dispatch:
 
 jobs:
-  build-windows:
-    name: Build Modded-PE for Windows
-    runs-on: windows-2022
+# =========================
+# LINUX BUILD
+# =========================
+  build-linux:
+    name: Linux Build
+    runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-      - name: Install Haxe 4.3.4
-        shell: powershell
+      - name: Setup Haxe
+        uses: krdlab/setup-haxe@master
+        with:
+          haxe-version: 4.3.4
+
+      - name: Install system dependencies
         run: |
-          choco install haxe --version=4.3.4 -y
-          $env:Path = "${env:ProgramData}\chocolatey\lib\haxe\tools\haxe;%env:Path%"
-          haxe --version
-          haxelib list
+          sudo apt-get update
+          sudo apt-get install -y libvlc-dev libvlccore-dev
 
-      - name: Install Lime & OpenFL
+      - name: Install Haxelib + Psych setup
         run: |
-          haxelib install lime
-          haxelib install openfl
-          haxelib run lime setup
-          haxelib run openfl setup
+          haxelib setup ~/haxelib
+          haxelib install hxcpp --quiet
+          chmod +x setup/unix.sh
+          sh setup/unix.sh
 
-      - name: Clean previous Windows build
-        run: lime clean windows
+      - name: Skip SScript setup
+        run: echo 'oy9:showMacroty8:loopCosti25y10:includeAllfg' >> ~/settings.cocoa
 
-      - name: Build Windows
-        run: lime build windows -release
+      - name: Set build version
+        run: echo "${{ github.run_id }}" > VERSION
 
-      - name: Upload Windows build artifact
+      - name: Build Linux
+        run: |
+          haxelib run lime build Project.xml linux \
+            --app-version="4.0.0-${{ github.run_id }}" \
+            -D officialBuild
+
+      - name: Upload Linux artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Modded-PE_Windows
-          path: export/release/windows/bin/*
+          name: MODDED-PE_Linux
+          path: export/release/linux/bin
+
+
+# =========================
+# WINDOWS BUILD
+# =========================
+  build-windows:
+    name: Windows Build
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Haxe
+        uses: krdlab/setup-haxe@master
+        with:
+          haxe-version: 4.3.4
+
+      - name: Install Haxelib + Psych setup
+        shell: cmd
+        run: |
+          haxelib setup C:\haxelib
+          haxelib install hxcpp > NUL
+          call setup\windows.bat
+
+      - name: Skip SScript setup
+        shell: cmd
+        run: echo oy9:showMacroty8:loopCosti25y10:includeAllfg >> %USERPROFILE%\settings.cocoa
+
+      - name: Set build version
+        shell: cmd
+        run: echo %GITHUB_RUN_ID% > VERSION
+
+      - name: Build Windows
+        shell: cmd
+        run: |
+          haxelib run lime build Project.xml windows ^
+            --app-version="4.0.0-%GITHUB_RUN_ID%" ^
+            -D officialBuild
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MODDED-PE_Windows
+          path: export/release/windows/bin

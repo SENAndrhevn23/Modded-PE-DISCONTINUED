@@ -20,9 +20,9 @@ import states.editors.MasterEditorMenu;
 class MainMenuState extends MusicBeatState
 {
 	// Versions
-	public static var psychEngineVersion:String = '1.0';
+	public static var psychEngineVersion:String = '1.0.4';
 	public static var pSliceVersion:String = '';
-	public static var funkinVersion:String = '0.5.3';
+	public static var funkinVersion:String = '0.7.5';
 	public static var hrkVersion:String = '0.0.1';
 
 	public static var curSelected:Int = 0;

@@ -61,7 +61,7 @@ xsi:schemaLocation="http://lime.openfl.org/project/1.0.4 http://lime.openfl.org/
 	<!-- ____________________________ Window Settings ___________________________ -->
 
 	<!--These window settings apply to all targets-->
-	<window width="1280" height="720" background="#000000" hardware="true" vsync="false"/>
+	<window width="1280" height="720" background="#000000" hardware="true" vsync="false"  allow-high-dpi="true"/>
 
 	<!--HTML5-specific-->
 	<window if="html5" resizable="true" />

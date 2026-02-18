@@ -1,12 +1,14 @@
 package options;
 
-import states.MainMenuState;
-import backend.StageData;
+import Controls;
+import flixel.graphics.FlxGraphic;
+import flixel.input.keyboard.FlxKey;
+import flixel.FlxG;
+import flixel.math.FlxMath;
+import flixel.group.FlxTypedGroup;
+import flixel.FlxSprite;
+import flixel.FlxCamera;
 import flixel.FlxObject;
-#if (target.threaded)
-import sys.thread.Mutex;
-import sys.thread.Thread;
-#end
 
 #if android
 import mobile.options.MobileOptionsSubState;
@@ -14,231 +16,262 @@ import mobile.options.MobileOptionsSubState;
 
 class OptionsState extends MusicBeatState
 {
-	var options:Array<String> = [
-		'Note Colors',
-		'Controls',
-		'Adjust Delay and Combo',
-		#if desktop 'Video Rendering', #end
-		'Optimizations',
-		'Graphics',
-		'Visuals',
-		'Gameplay',
-		'V-Slice Options',
-		#if TRANSLATIONS_ALLOWED 'Language', #end
-		#if (TOUCH_CONTROLS_ALLOWED || mobile) 'Mobile Options' #end
-	];
-	private var grpOptions:FlxTypedGroup<Alphabet>;
-	private static var curSelected:Int = 0;
-	public static var menuBG:FlxSprite;
-	public static var onPlayState:Bool = false;
-	#if (target.threaded) var mutex:Mutex = new Mutex(); #end
+    var kId = 0;
+    var keys:Array<FlxKey> = [D, E, B, U, G, SEVEN];
+    var konamiIndex:Int = 0;
+    var konamiCode = [];
+    var isEnteringKonamiCode:Bool = false;
 
-	private var mainCam:FlxCamera;
-	private var camFollow:FlxObject;
-	private var camFollowPos:FlxObject;
-	public static var funnyCam:FlxCamera;
+    var options:Array<String> = [
+        'Note Colors',
+        'Controls',
+        'Adjust Delay and Combo',
+        #if desktop 'Video Rendering', #end
+        'Optimizations',
+        'Graphics',
+        'Visuals',
+        'Gameplay',
+        'V-Slice Options'
+        #if (TOUCH_CONTROLS_ALLOWED || mobile) , 'Mobile Options' #end
+        #if TRANSLATIONS_ALLOWED , 'Language' #end
+        ,'Misc'
+    ];
 
-	function openSelectedSubstate(label:String) {
-		if (label != "Adjust Delay and Combo")
-			persistentUpdate = false;
+    private var grpOptions:FlxTypedGroup<Alphabet>;
+    private static var curSelected:Int = 0;
+    public static var menuBG:FlxSprite;
+    public static var onPlayState:Bool = false;
+    public var enteringDebugMenu:Bool = false;
+    private var mainCamera:FlxCamera;
+    private var subCamera:FlxCamera;
+    private var otherCamera:FlxCamera;
+    private var camFollow:FlxObject;
+    private var camFollowPos:FlxObject;
 
-		switch(label)
-		{
-			case 'Note Colors':
-				openSubState(new options.NotesColorSubState());
-			case 'Controls':
-				if (controls.mobileC)
-				{
-					persistentUpdate = true;
-					FlxG.sound.play(Paths.sound('cancelMenu'));
-				}
-				else
-					openSubState(new options.ControlsSubState());
-			#if desktop
-			case 'Video Rendering':
-				openSubState(new options.GameRendererSettingsSubState());
-			#end
-			case 'Optimizations':
-				openSubState(new options.OptimizeSettingsSubState());
-			case 'Graphics':
-				openSubState(new options.GraphicsSettingsSubState());
-			case 'Visuals':
-				openSubState(new options.VisualsSettingsSubState());
-			case 'Gameplay':
-				openSubState(new options.GameplaySettingsSubState());
-			case 'Adjust Delay and Combo':
-				MusicBeatState.switchState(new options.NoteOffsetState());
-			case 'V-Slice Options':
-				openSubState(new BaseGameSubState());
-			#if (TOUCH_CONTROLS_ALLOWED || mobile)
-			case 'Mobile Options':
-				openSubState(new mobile.options.MobileOptionsSubState());
-			#end
-			case 'Language':
-				openSubState(new options.LanguageSubState());
-		}
-	}
+    function openSelectedSubstate(label:String)
+    {
+        switch(label)
+        {
+            case 'Note Colors':
+                if (!ClientPrefs.enableColorShader)
+                    CoolUtil.coolError("You need 'Enable Note Colors' in Visuals & UI to access this menu.", "JS Engine Anti-Crash Tool");
+                else
+                    openSubState(new options.NotesColorSubState());
 
-	var selectorLeft:Alphabet;
-	var selectorRight:Alphabet;
+            case 'Controls':
+                openSubState(new options.ControlsSubState());
 
-	override function create()
-	{
-		mainCam = initPsychCamera();
-		funnyCam = new FlxCamera();
-		funnyCam.bgColor.alpha = 0;
-		FlxG.cameras.add(funnyCam, false);
+            case 'Adjust Delay and Combo':
+                LoadingState.loadAndSwitchState(() -> new options.NoteOffsetState());
 
-		camFollow = new FlxObject(0, 0, 1, 1);
-		camFollowPos = new FlxObject(0, 0, 1, 1);
-		add(camFollow);
-		add(camFollowPos);
-		FlxG.cameras.list[FlxG.cameras.list.indexOf(funnyCam)].follow(camFollowPos);
+            #if desktop
+            case 'Video Rendering':
+                openSubState(new options.GameRendererSettingsSubState());
+            #end
 
-		#if DISCORD_ALLOWED
-		DiscordClient.changePresence("Options Menu", null);
-		#end
+            case 'Optimizations':
+                openSubState(new options.OptimizeSettingsSubState());
 
-		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
-		bg.antialiasing = ClientPrefs.data.antialiasing;
-		bg.color = 0xFFea71fd;
-		bg.updateHitbox();
+            case 'Graphics':
+                openSubState(new options.GraphicsSettingsSubState());
 
-		bg.screenCenter();
-		add(bg);
+            case 'Visuals':
+                openSubState(new options.VisualsSettingsSubState());
 
-		grpOptions = new FlxTypedGroup<Alphabet>();
-		add(grpOptions);
+            case 'Gameplay':
+                openSubState(new options.GameplaySettingsSubState());
 
-		for (num => option in options)
-		{
-			var optionText:Alphabet = new Alphabet(0, 0, Language.getPhrase('options_$option', option), true);
-			optionText.setScale(0.75);
-			optionText.screenCenter();
-			optionText.y += (60 * (num - (options.length / 2))) + 30;
-			grpOptions.add(optionText);
-		}
+            case 'V-Slice Options':
+                openSubState(new BaseGameSubState());
 
-		selectorLeft = new Alphabet(0, 0, '>>>', true);
-		selectorLeft.alignment = RIGHT;
-		selectorLeft.setScale(2/3);
-		add(selectorLeft);
-		selectorRight = new Alphabet(0, 0, '<<<', true);
-		selectorRight.setScale(2/3);
-		add(selectorRight);
+            #if (TOUCH_CONTROLS_ALLOWED || mobile)
+            case 'Mobile Options':
+                openSubState(new MobileOptionsSubState());
+            #end
 
-		changeSelection();
-		ClientPrefs.saveSettings();
-		
-		// Get this setting in this timing
-		#if android MobileOptionsSubState.lastStorageType = ClientPrefs.data.storageType; #end
+            case 'Language':
+                openSubState(new options.LanguageSubState());
 
-		#if (target.threaded)
-		Thread.create(()->{
-			mutex.acquire();
+            case 'Misc':
+                openSubState(new options.MiscSettingsSubState());
+        }
+    }
 
-			for (music in VisualsSettingsSubState.pauseMusics)
-			{
-				if (music.toLowerCase() != "none")
-					Paths.music(Paths.formatToSongPath(music));
-			}
+    var selectorLeft:Alphabet;
+    var selectorRight:Alphabet;
 
-			mutex.release();
-		});
-		#end
+    override function create()
+    {
+        Paths.clearStoredMemory();
+        Paths.clearUnusedMemory();
 
-		#if TOUCH_CONTROLS_ALLOWED
-		addTouchPad('UP_DOWN', 'A_B');
-		#end
-		
-		super.create();
-	}
+        mainCamera = initPsychCamera();
+        subCamera = new FlxCamera();
+        otherCamera = new FlxCamera();
+        subCamera.bgColor.alpha = 0;
+        otherCamera.bgColor.alpha = 0;
 
-	override function closeSubState()
-	{
-		super.closeSubState();
-		ClientPrefs.saveSettings();
-		#if DISCORD_ALLOWED
-		DiscordClient.changePresence("Options Menu", null);
-		#end
-		controls.isInSubstate = false;
-		persistentUpdate = funnyCam.visible = true;
-		
-		#if TOUCH_CONTROLS_ALLOWED
-		removeTouchPad();
-		addTouchPad('UP_DOWN', 'A_B');
-		#end
-	}
+        if (onPlayState && PlayState.SONG.disableNoteRGB)
+            options.remove('Note Colors');
 
-	override function update(elapsed:Float) {
-		super.update(elapsed);
+        FlxG.cameras.add(subCamera, false);
+        FlxG.cameras.add(otherCamera, false);
 
-		if (controls.UI_UP_P)
-			changeSelection(-1);
-		if (controls.UI_DOWN_P)
-			changeSelection(1);
+        camFollow = new FlxObject(0, 0, 1, 1);
+        camFollowPos = new FlxObject(0, 0, 1, 1);
+        add(camFollow);
+        add(camFollowPos);
+        FlxG.cameras.list[FlxG.cameras.list.indexOf(subCamera)].follow(camFollowPos);
 
-		var lerpVal:Float = Math.max(0, Math.min(1, elapsed * 7.5));
-		camFollowPos.setPosition(635, FlxMath.lerp(camFollowPos.y, camFollow.y, lerpVal));
+        #if desktop
+        DiscordClient.changePresence("Options Menu", null);
+        #end
 
-		var bullShit:Int = 0;
+        var yScroll:Float = Math.max(0.25 - (0.05 * (options.length - options.length)), 0.1);
+        var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
+        bg.color = 0xFFea71fd;
+        bg.updateHitbox();
+        bg.scrollFactor.set(0, 0);
+        bg.screenCenter();
+        bg.y -= 5;
+        bg.antialiasing = ClientPrefs.globalAntialiasing;
+        add(bg);
 
-		for (item in grpOptions.members)
-		{
-			item.targetY = bullShit - curSelected;
-			bullShit++;
+        grpOptions = new FlxTypedGroup<Alphabet>();
+        add(grpOptions);
 
-			var thing:Float = 0;
-			if (item.targetY == 0) {
-				if(grpOptions.members.length > 6) {
-					thing = grpOptions.members.length * 2;
-				}
-				camFollow.setPosition(635, item.getGraphicMidpoint().y + 100 - thing);
-			}
-		}
+        for (i in 0...options.length)
+        {
+            var optionText:Alphabet = new Alphabet(0, 0, options[i], true);
+            optionText.screenCenter();
+            optionText.y += (100 * (i - (options.length / 2))) + 50;
+            optionText.scrollFactor.set(0, yScroll*1.5);
+            optionText.cameras = [subCamera];
+            grpOptions.add(optionText);
+        }
 
-		if (controls.BACK)
-		{
-			FlxG.sound.play(Paths.sound('cancelMenu'), ClientPrefs.data.sfxVolume);
-			if(onPlayState)
-			{
-				StageData.loadDirectory(PlayState.SONG);
-				LoadingState.loadAndSwitchState(new PlayState());
-				FlxG.sound.music.volume = 0;
-			}
-			else MusicBeatState.switchState(new MainMenuState());
-		}
-		else if (controls.ACCEPT) openSelectedSubstate(options[curSelected]);
-	}
-	
-	function changeSelection(change:Int = 0)
-	{
-		curSelected = FlxMath.wrap(curSelected + change, 0, options.length - 1);
+        selectorLeft = new Alphabet(0, 0, '>', true);
+        selectorLeft.scrollFactor.set(0, yScroll*1.5);
+        selectorLeft.cameras = [subCamera];
+        add(selectorLeft);
 
-		for (num => item in grpOptions.members)
-		{
-			item.targetY = num - curSelected;
-			item.alpha = 0.6;
-			if (item.targetY == 0)
-			{
-				item.alpha = 1;
-				selectorLeft.x = item.x - 140;
-				selectorLeft.y = item.y + 7;
-				selectorRight.x = item.x + item.width + 35;
-				selectorRight.y = item.y + 7;
-			}
-		}
-		FlxG.sound.play(Paths.sound('scrollMenu'), ClientPrefs.data.sfxVolume);
-	}
+        selectorRight = new Alphabet(0, 0, '<', true);
+        selectorRight.scrollFactor.set(0, yScroll*1.5);
+        selectorRight.cameras = [subCamera];
+        add(selectorRight);
 
-	override function destroy()
-	{
-		ClientPrefs.loadPrefs();
-		if (!ClientPrefs.data.disableGC && !MemoryUtil.isGcEnabled) {
-			MemoryUtil.enable();
-			MemoryUtil.collect(true);
-			MemoryUtil.compact();
-		}
-		super.destroy();
-	}
+        changeSelection();
+        ClientPrefs.saveSettings();
+        super.create();
+    }
+
+    override function closeSubState()
+    {
+        super.closeSubState();
+        ClientPrefs.saveSettings();
+        FlxG.mouse.visible = false;
+    }
+
+    override function update(elapsed:Float)
+    {
+        super.update(elapsed);
+
+        if (controls.UI_UP_P) changeSelection(-1);
+        if (controls.UI_DOWN_P) changeSelection(1);
+
+        var lerpVal:Float = CoolUtil.clamp(elapsed * 7.5, 0, 1);
+        camFollowPos.setPosition(
+            FlxMath.lerp(camFollowPos.x, camFollow.x, lerpVal),
+            FlxMath.lerp(camFollowPos.y, camFollow.y, lerpVal)
+        );
+
+        if (controls.BACK && !isEnteringKonamiCode)
+        {
+            FlxG.sound.play(Paths.sound('cancelMenu'));
+            if(PauseSubState.inPause)
+            {
+                PauseSubState.inPause = false;
+                StageData.loadDirectory(PlayState.SONG);
+                LoadingState.loadAndSwitchState(PlayState.new);
+                FlxG.sound.music.volume = 0;
+            }
+            else FlxG.switchState(MainMenuState.new);
+        }
+
+        if (controls.ACCEPT && !isEnteringKonamiCode)
+        {
+            openSelectedSubstate(options[curSelected]);
+        }
+
+        // Konami code check
+        if (FlxG.keys.justPressed.ANY)
+        {
+            var k = keys[kId];
+            if (FlxG.keys.anyJustPressed([k]))
+            {
+                #if desktop
+                kId++;
+                #end
+                if (kId >= keys.length)
+                {
+                    enteringDebugMenu = true;
+                    kId = 0;
+                    FlxTween.tween(FlxG.camera, {alpha:0}, 1.5, {startDelay:1, ease:FlxEase.cubeOut});
+                    if (FlxG.sound.music != null)
+                        FlxTween.tween(FlxG.sound.music, {pitch:0, volume:0}, 2.5, {ease:FlxEase.cubeOut});
+                    FlxTween.tween(FlxG.camera, {zoom:0.1, angle:-15}, 2.5, {ease:FlxEase.cubeIn, onComplete: function(t) {
+                        FlxG.camera.angle = 0;
+                        openSubState(new options.SuperSecretDebugMenu());
+                    }});
+                }
+            }
+        }
+    }
+
+    function changeSelection(change:Int = 0)
+    {
+        curSelected += change;
+        if (curSelected < 0) curSelected = options.length - 1;
+        if (curSelected >= options.length) curSelected = 0;
+
+        var bullShit:Int = 0;
+        for (item in grpOptions.members)
+        {
+            item.targetY = bullShit - curSelected;
+            bullShit++;
+            item.alpha = 0.6;
+            var thing:Float = 0;
+            if (item.targetY == 0)
+            {
+                item.alpha = 1;
+                if (grpOptions.members.length > 4) thing = grpOptions.members.length * 8;
+                selectorLeft.x = item.x - 63;
+                selectorLeft.y = item.y;
+                selectorRight.x = item.x + item.width + 15;
+                selectorRight.y = item.y;
+            }
+        }
+        camFollow.setPosition(FlxG.width / 2, (curSelected * (grpOptions.members.length * 10)));
+        FlxG.sound.play(Paths.sound('scrollMenu'));
+    }
+
+    function checkKonamiCode():Bool
+    {
+        if (konamiCode[konamiIndex].justPressed)
+        {
+            konamiIndex++;
+            if (konamiIndex > 6) isEnteringKonamiCode = true;
+            if (konamiIndex >= konamiCode.length)
+            {
+                konamiIndex = 0;
+                return true;
+            }
+        }
+        else
+        {
+            konamiIndex = 0;
+            isEnteringKonamiCode = false;
+        }
+        return false;
+    }
 }

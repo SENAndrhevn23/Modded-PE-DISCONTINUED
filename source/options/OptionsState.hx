@@ -11,26 +11,20 @@ import flixel.text.FlxText;
 
 class OptionsState extends FlxState
 {
-    var kId = 0;
-    var keys:Array<Int> = []; // stubbed, can fill with FlxKey values
-    var konamiIndex:Int = 0;
-    var isEnteringKonamiCode:Bool = false;
-
+    var curSelected:Int = 0;
     var options:Array<String> = [
         'Note Colors',
         'Controls',
         'Adjust Delay and Combo',
+        'Video Rendering',
         'Optimizations',
         'Graphics',
         'Visuals',
         'Gameplay',
-        'V-Slice Options',
-        'Misc'
+        'V-Slice Options'
     ];
 
     private var grpOptions:FlxGroup;
-    private static var curSelected:Int = 0;
-    public static var menuBG:FlxSprite;
     private var mainCamera:FlxCamera;
     private var subCamera:FlxCamera;
     private var otherCamera:FlxCamera;
@@ -42,8 +36,18 @@ class OptionsState extends FlxState
 
     function openSelectedSubstate(label:String)
     {
-        // Stub: just print which menu is opened
-        trace('Opening substate: $label');
+        switch(label)
+        {
+            case 'Note Colors': openSubState(new NotesColorSubState());
+            case 'Controls': openSubState(new ControlsSubState());
+            case 'Adjust Delay and Combo': openSubState(new NoteOffsetState());
+            case 'Video Rendering': openSubState(new GameRendererSettingsSubState());
+            case 'Optimizations': openSubState(new OptimizeSettingsSubState());
+            case 'Graphics': openSubState(new GraphicsSettingsSubState());
+            case 'Visuals': openSubState(new VisualsSettingsSubState());
+            case 'Gameplay': openSubState(new GameplaySettingsSubState());
+            case 'V-Slice Options': openSubState(new BaseGameSubState());
+        }
     }
 
     override function create()

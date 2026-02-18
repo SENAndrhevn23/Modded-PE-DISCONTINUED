@@ -13,7 +13,7 @@ import flixel.util.FlxColor;
 
 class OptionsState extends FlxState
 {
-    // IMPORTANT: fixes ALL onPlayState errors
+    // REQUIRED by other files
     public static var onPlayState:Bool = false;
 
     var curSelected:Int = 0;
@@ -31,7 +31,6 @@ class OptionsState extends FlxState
     ];
 
     private var grpOptions:FlxGroup;
-
     private var camFollow:FlxObject;
     private var camFollowPos:FlxObject;
 
@@ -42,25 +41,18 @@ class OptionsState extends FlxState
     {
         super.create();
 
-        // Cameras
-        var subCamera = new FlxCamera();
-        subCamera.bgColor.alpha = 0;
-        FlxG.cameras.add(subCamera, false);
-
         camFollow = new FlxObject(0, 0, 1, 1);
         camFollowPos = new FlxObject(0, 0, 1, 1);
         add(camFollow);
         add(camFollowPos);
         FlxG.camera.follow(camFollowPos);
 
-        // Background
         var bg = new FlxSprite();
         bg.makeGraphic(FlxG.width, FlxG.height, FlxColor.fromRGB(30, 30, 30));
         bg.scrollFactor.set();
         bg.screenCenter();
         add(bg);
 
-        // Options group
         grpOptions = new FlxGroup();
         add(grpOptions);
 
@@ -85,7 +77,6 @@ class OptionsState extends FlxState
     {
         super.update(elapsed);
 
-        // Navigation
         if (FlxG.keys.justPressed.UP)
             changeSelection(-1);
 
@@ -93,17 +84,14 @@ class OptionsState extends FlxState
             changeSelection(1);
 
         if (FlxG.keys.justPressed.ENTER)
-            openSelectedSubstate(options[curSelected]);
+            openSelected();
 
         if (FlxG.keys.justPressed.ESCAPE)
         {
-            if (onPlayState)
-                close();
-            else
-                FlxG.switchState(new MainMenuState());
+            OptionsState.onPlayState = false;
+            FlxG.switchState(new MainMenuState());
         }
 
-        // Smooth camera follow
         var lerp = FlxMath.bound(elapsed * 8, 0, 1);
         camFollowPos.setPosition(
             FlxMath.lerp(camFollowPos.x, camFollow.x, lerp),
@@ -136,9 +124,9 @@ class OptionsState extends FlxState
         }
     }
 
-    function openSelectedSubstate(label:String)
+    function openSelected()
     {
-        switch (label)
+        switch (options[curSelected])
         {
             case 'Note Colors':
                 openSubState(new NotesColorSubState());
@@ -146,8 +134,10 @@ class OptionsState extends FlxState
             case 'Controls':
                 openSubState(new ControlsSubState());
 
+            // ❗ MUST be switchState (NOT a substate)
             case 'Adjust Delay and Combo':
-                openSubState(new NoteOffsetState()); // MUST extend FlxSubState
+                OptionsState.onPlayState = true;
+                FlxG.switchState(new NoteOffsetState());
 
             case 'Video Rendering':
                 openSubState(new GameRendererSettingsSubState());

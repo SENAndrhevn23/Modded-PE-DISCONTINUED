@@ -1,24 +1,19 @@
 package options;
 
 import flixel.FlxG;
-import flixel.FlxState;
 import flixel.FlxSubState;
 import flixel.group.FlxGroup;
-import flixel.FlxSprite;
-import flixel.FlxCamera;
-import flixel.FlxObject;
-import flixel.math.FlxMath;
 import flixel.text.FlxText;
-
-import LoadingState;
-import PlayState;
-import Paths;
+import flixel.FlxSprite;
+import flixel.FlxObject;
+import flixel.FlxCamera;
+import flixel.math.FlxMath;
 
 class OptionsState extends FlxSubState
 {
-    // --- Options List ---
     public static var onPlayState:Bool = false;
     private static var curSelected:Int = 0;
+
     private var options:Array<String> = [
         'Note Colors',
         'Controls',
@@ -31,15 +26,12 @@ class OptionsState extends FlxSubState
         'V-Slice Options'
     ];
 
-    // --- UI ---
     private var grpOptions:FlxGroup;
     private var selectorLeft:FlxText;
     private var selectorRight:FlxText;
 
-    // --- Cameras for smooth scrolling ---
     private var camFollow:FlxObject;
     private var camFollowPos:FlxObject;
-    private var mainCamera:FlxCamera;
     private var subCamera:FlxCamera;
     private var otherCamera:FlxCamera;
 
@@ -48,15 +40,15 @@ class OptionsState extends FlxSubState
     {
         switch(label)
         {
-            case 'Note Colors': openSubState(new NotesColorSubState());
-            case 'Controls': openSubState(new ControlsSubState());
-            case 'Graphics': openSubState(new GraphicsSettingsSubState());
-            case 'Visuals': openSubState(new VisualsSettingsSubState());
-            case 'Gameplay': openSubState(new GameplaySettingsSubState());
-            case 'Adjust Delay and Combo': LoadingState.loadAndSwitchState(() -> new NoteOffsetState());
-            case 'Video Rendering': openSubState(new GameRendererSettingsSubState());
-            case 'Optimizations': openSubState(new OptimizeSettingsSubState());
-            case 'V-Slice Options': openSubState(new BaseGameSubState());
+            case 'Note Colors': trace("Open NotesColorSubState");
+            case 'Controls': trace("Open ControlsSubState");
+            case 'Graphics': trace("Open GraphicsSettingsSubState");
+            case 'Visuals': trace("Open VisualsSettingsSubState");
+            case 'Gameplay': trace("Open GameplaySettingsSubState");
+            case 'Adjust Delay and Combo': trace("Open NoteOffsetState");
+            case 'Video Rendering': trace("Open GameRendererSettingsSubState");
+            case 'Optimizations': trace("Open OptimizeSettingsSubState");
+            case 'V-Slice Options': trace("Open BaseGameSubState");
         }
     }
 
@@ -65,7 +57,6 @@ class OptionsState extends FlxSubState
         super.create();
 
         // --- Cameras ---
-        mainCamera = new FlxCamera();
         subCamera = new FlxCamera();
         otherCamera = new FlxCamera();
         subCamera.bgColor.alpha = 0;
@@ -85,7 +76,6 @@ class OptionsState extends FlxSubState
         bg.makeGraphic(FlxG.width, FlxG.height, 0xFF222222);
         bg.scrollFactor.set(0, 0);
         bg.screenCenter();
-        bg.antialiasing = true;
         add(bg);
 
         // --- Options ---
@@ -94,11 +84,9 @@ class OptionsState extends FlxSubState
 
         for (i in 0...options.length)
         {
-            var optionText:FlxText = new FlxText(0, 0, 200, options[i]);
+            var optionText:FlxText = new FlxText(0, 0, 300, options[i]);
             optionText.screenCenter();
             optionText.y += 50 + i * 30;
-            optionText.scrollFactor.set(0, 0.2);
-            optionText.targetY = Std.int(optionText.y); // Fixed Float -> Int
             grpOptions.add(optionText);
         }
 
@@ -115,29 +103,21 @@ class OptionsState extends FlxSubState
     {
         super.update(elapsed);
 
-        // --- Input for scrolling ---
         if (FlxG.keys.justPressed.UP) changeSelection(-1);
         if (FlxG.keys.justPressed.DOWN) changeSelection(1);
 
-        // --- Smooth Camera Lerp ---
+        // Smooth camera
         var lerpVal:Float = Math.min(Math.max(elapsed * 7.5, 0), 1);
         camFollowPos.setPosition(
             FlxMath.lerp(camFollowPos.x, camFollow.x, lerpVal),
             FlxMath.lerp(camFollowPos.y, camFollow.y, lerpVal)
         );
 
-        // --- Accept / Back ---
         if (FlxG.keys.justPressed.ENTER) openSelectedSubstate(options[curSelected]);
         if (FlxG.keys.justPressed.ESCAPE)
         {
-            FlxG.sound.play(Paths.sound('cancelMenu'));
-            if (onPlayState)
-            {
-                LoadingState.loadAndSwitchState(new PlayState());
-                FlxG.sound.music.volume = 0;
-            }
-            else
-                closeSubState();
+            trace("Back pressed - closing options");
+            closeSubState();
         }
     }
 
@@ -149,12 +129,13 @@ class OptionsState extends FlxSubState
 
         for (i in 0...grpOptions.members.length)
         {
-            var item:FlxText = grpOptions.members[i];
-            item.targetY = Std.int((FlxG.height/2) + (i - curSelected) * 90); // fixed Float -> Int
-            item.alpha = 0.6;
+            var item:FlxText = cast grpOptions.members[i];
+            var yPos:Int = Std.int((FlxG.height/2) + (i - curSelected) * 90);
+            item.y = yPos;
+            item.alpha = (i == curSelected) ? 1 : 0.6;
+
             if (i == curSelected)
             {
-                item.alpha = 1;
                 selectorLeft.x = item.x - 40;
                 selectorLeft.y = item.y;
                 selectorRight.x = item.x + item.width + 15;
@@ -163,6 +144,5 @@ class OptionsState extends FlxSubState
         }
 
         camFollow.setPosition(FlxG.width/2, curSelected * 90);
-        FlxG.sound.play(Paths.sound('scrollMenu'));
     }
 }

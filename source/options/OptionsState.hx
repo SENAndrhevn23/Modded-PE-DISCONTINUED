@@ -25,7 +25,6 @@ class OptionsState extends MusicBeatState
 
     private var grpOptions:FlxGroup; // Use plain FlxGroup for compatibility
     private static var curSelected:Int = 0;
-    public static var menuBG:FlxSprite;
     public static var onPlayState:Bool = false;
 
     var selectorLeft:Alphabet;
@@ -60,7 +59,7 @@ class OptionsState extends MusicBeatState
     {
         super.create();
 
-        // Background
+        // Plain color background instead of image
         var bg:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, 0xFF1E1E1E);
         bg.scrollFactor.set(0, 0);
         add(bg);

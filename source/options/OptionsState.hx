@@ -23,7 +23,7 @@ class OptionsState extends MusicBeatState
         'Optimizations'
     ];
 
-    private var grpOptions:FlxGroup; // Use plain FlxGroup for compatibility
+    private var grpOptions:FlxGroup;
     private static var curSelected:Int = 0;
     public static var onPlayState:Bool = false;
 
@@ -34,24 +34,15 @@ class OptionsState extends MusicBeatState
 
     function openSelectedSubstate(label:String) {
         switch(label) {
-            case 'Note Colors':
-                openSubState(new options.NotesColorSubState());
-            case 'Controls':
-                openSubState(new options.ControlsSubState());
-            case 'Graphics':
-                openSubState(new options.GraphicsSettingsSubState());
-            case 'Visuals':
-                openSubState(new options.VisualsSettingsSubState());
-            case 'Gameplay':
-                openSubState(new options.GameplaySettingsSubState());
-            case 'Adjust Delay and Combo':
-                MusicBeatState.switchState(new options.NoteOffsetState());
-            case 'V-Slice Options':
-                openSubState(new BaseGameSubState());
-            case 'Video Rendering':
-                openSubState(new options.GameRendererSettingsSubState());
-            case 'Optimizations':
-                openSubState(new options.OptimizeSettingsSubState());
+            case 'Note Colors': openSubState(new options.NotesColorSubState());
+            case 'Controls': openSubState(new options.ControlsSubState());
+            case 'Graphics': openSubState(new options.GraphicsSettingsSubState());
+            case 'Visuals': openSubState(new options.VisualsSettingsSubState());
+            case 'Gameplay': openSubState(new options.GameplaySettingsSubState());
+            case 'Adjust Delay and Combo': MusicBeatState.switchState(new options.NoteOffsetState());
+            case 'V-Slice Options': openSubState(new BaseGameSubState());
+            case 'Video Rendering': openSubState(new options.GameRendererSettingsSubState());
+            case 'Optimizations': openSubState(new options.OptimizeSettingsSubState());
         }
     }
 
@@ -59,17 +50,17 @@ class OptionsState extends MusicBeatState
     {
         super.create();
 
-        // Plain color background instead of image
-        var bg:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, 0xFF1E1E1E);
-        bg.scrollFactor.set(0, 0);
+        // STATIC background
+        var bg:FlxSprite = new FlxSprite();
+        bg.makeGraphic(FlxG.width, FlxG.height, 0xFF1E1E1E);
+        bg.scrollFactor.set(0, 0); // <-- makes it stay fixed
         add(bg);
 
-        // Cameras for scrolling
+        // Cameras and scrolling objects
         camFollow = new FlxObject(FlxG.width / 2, FlxG.height / 2, 1, 1);
         camFollowPos = new FlxObject(camFollow.x, camFollow.y, 1, 1);
         add(camFollow);
         add(camFollowPos);
-
         FlxG.cameras.list[0].follow(camFollowPos);
 
         // Options
@@ -96,7 +87,6 @@ class OptionsState extends MusicBeatState
     {
         super.update(elapsed);
 
-        // Scroll camera smoothly
         var lerpVal:Float = Math.min(Math.max(elapsed * 7.5, 0), 1);
         camFollowPos.setPosition(
             FlxMath.lerp(camFollowPos.x, camFollow.x, lerpVal),
@@ -128,8 +118,7 @@ class OptionsState extends MusicBeatState
                 selectorRight.x = item.x + item.width + 10;
                 selectorRight.y = item.y;
 
-                // Scroll cam to selection
-                camFollow.y = item.y;
+                camFollow.y = item.y; // scroll options without moving background
             }
         }
         FlxG.sound.play(Paths.sound('scrollMenu'));

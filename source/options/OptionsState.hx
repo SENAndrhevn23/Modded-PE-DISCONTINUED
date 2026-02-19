@@ -1,15 +1,14 @@
 package options;
 
-import flixel.FlxG;
-import flixel.FlxSubState;
-import flixel.group.FlxGroup;
-import flixel.text.FlxText;
-import flixel.FlxSprite;
+import states.MainMenuState;
 import flixel.FlxObject;
+import flixel.FlxSprite;
 import flixel.FlxCamera;
 import flixel.math.FlxMath;
+import flixel.text.FlxText;
+import flixel.group.FlxGroup;
 
-class OptionsState extends FlxSubState
+class OptionsState extends MusicBeatState
 {
     public static var onPlayState:Bool = false;
     private static var curSelected:Int = 0;
@@ -27,122 +26,151 @@ class OptionsState extends FlxSubState
     ];
 
     private var grpOptions:FlxGroup;
-    private var selectorLeft:FlxText;
-    private var selectorRight:FlxText;
+    private var selectorLeft:Alphabet;
+    private var selectorRight:Alphabet;
 
+    private var mainCam:FlxCamera;
     private var camFollow:FlxObject;
     private var camFollowPos:FlxObject;
-    private var subCamera:FlxCamera;
-    private var otherCamera:FlxCamera;
+    public static var funnyCam:FlxCamera;
 
-    // --- Open SubState ---
+    // ------------------------
+    // Substate handling
+    // ------------------------
     function openSelectedSubstate(label:String)
     {
         switch(label)
         {
-            case 'Note Colors': trace("Open NotesColorSubState");
-            case 'Controls': trace("Open ControlsSubState");
-            case 'Graphics': trace("Open GraphicsSettingsSubState");
-            case 'Visuals': trace("Open VisualsSettingsSubState");
-            case 'Gameplay': trace("Open GameplaySettingsSubState");
-            case 'Adjust Delay and Combo': trace("Open NoteOffsetState");
-            case 'Video Rendering': trace("Open GameRendererSettingsSubState");
-            case 'Optimizations': trace("Open OptimizeSettingsSubState");
-            case 'V-Slice Options': trace("Open BaseGameSubState");
+            case 'Note Colors': openSubState(new options.NotesColorSubState());
+            case 'Controls': openSubState(new options.ControlsSubState());
+            case 'Graphics': openSubState(new options.GraphicsSettingsSubState());
+            case 'Visuals': openSubState(new options.VisualsSettingsSubState());
+            case 'Gameplay': openSubState(new options.GameplaySettingsSubState());
+            case 'Adjust Delay and Combo': MusicBeatState.switchState(new options.NoteOffsetState());
+            case 'Video Rendering': openSubState(new options.GameRendererSettingsSubState());
+            case 'Optimizations': openSubState(new options.OptimizeSettingsSubState());
+            case 'V-Slice Options': openSubState(new BaseGameSubState());
         }
     }
 
+    // ------------------------
+    // Initialization
+    // ------------------------
     override function create()
     {
         super.create();
 
-        // --- Cameras ---
-        subCamera = new FlxCamera();
-        otherCamera = new FlxCamera();
-        subCamera.bgColor.alpha = 0;
-        otherCamera.bgColor.alpha = 0;
-
-        FlxG.cameras.add(subCamera, false);
-        FlxG.cameras.add(otherCamera, false);
+        // Cameras
+        mainCam = initPsychCamera();
+        funnyCam = new FlxCamera();
+        funnyCam.bgColor.alpha = 0;
+        FlxG.cameras.add(funnyCam, false);
 
         camFollow = new FlxObject(0, 0, 1, 1);
         camFollowPos = new FlxObject(0, 0, 1, 1);
         add(camFollow);
         add(camFollowPos);
-        subCamera.follow(camFollowPos);
+        funnyCam.follow(camFollowPos);
 
-        // --- Background ---
-        var bg:FlxSprite = new FlxSprite();
-        bg.makeGraphic(FlxG.width, FlxG.height, 0xFF222222);
-        bg.scrollFactor.set(0, 0);
+        // Background (graphic, not plain grey)
+        var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
+        bg.antialiasing = ClientPrefs.data.antialiasing;
+        bg.color = 0xFFea71fd;
+        bg.updateHitbox();
         bg.screenCenter();
         add(bg);
 
-        // --- Options ---
+        // Options
         grpOptions = new FlxGroup();
         add(grpOptions);
 
         for (i in 0...options.length)
         {
-            var optionText:FlxText = new FlxText(0, 0, 300, options[i]);
+            var optionText:Alphabet = new Alphabet(0, 0, options[i], true);
+            optionText.setScale(0.75);
             optionText.screenCenter();
-            optionText.y += 50 + i * 30;
+            optionText.y += (60 * (i - (options.length / 2))) + 30;
             grpOptions.add(optionText);
         }
 
-        // --- Selector ---
-        selectorLeft = new FlxText(0, 0, 20, ">");
-        selectorRight = new FlxText(0, 0, 20, "<");
+        // Selector arrows
+        selectorLeft = new Alphabet(0, 0, ">>>", true);
+        selectorLeft.setScale(0.75);
+        selectorRight = new Alphabet(0, 0, "<<<", true);
+        selectorRight.setScale(0.75);
         add(selectorLeft);
         add(selectorRight);
 
         changeSelection();
+        ClientPrefs.saveSettings();
     }
 
+    // ------------------------
+    // Update loop
+    // ------------------------
     override function update(elapsed:Float)
     {
         super.update(elapsed);
 
-        if (FlxG.keys.justPressed.UP) changeSelection(-1);
-        if (FlxG.keys.justPressed.DOWN) changeSelection(1);
+        // Navigation
+        if (controls.UI_UP_P) changeSelection(-1);
+        if (controls.UI_DOWN_P) changeSelection(1);
 
-        // Smooth camera
-        var lerpVal:Float = Math.min(Math.max(elapsed * 7.5, 0), 1);
-        camFollowPos.setPosition(
-            FlxMath.lerp(camFollowPos.x, camFollow.x, lerpVal),
-            FlxMath.lerp(camFollowPos.y, camFollow.y, lerpVal)
-        );
+        // Smooth camera follow
+        var lerpVal:Float = Math.max(0, Math.min(1, elapsed * 7.5));
+        camFollowPos.setPosition(FlxG.width / 2, FlxMath.lerp(camFollowPos.y, camFollow.y, lerpVal));
 
-        if (FlxG.keys.justPressed.ENTER) openSelectedSubstate(options[curSelected]);
-        if (FlxG.keys.justPressed.ESCAPE)
+        // Accept / Back
+        if (controls.BACK)
         {
-            trace("Back pressed - closing options");
-            closeSubState();
+            FlxG.sound.play(Paths.sound('cancelMenu'));
+            if (onPlayState)
+            {
+                StageData.loadDirectory(PlayState.SONG);
+                LoadingState.loadAndSwitchState(new PlayState());
+                FlxG.sound.music.volume = 0;
+            }
+            else MusicBeatState.switchState(new MainMenuState());
+        }
+        else if (controls.ACCEPT)
+        {
+            openSelectedSubstate(options[curSelected]);
         }
     }
 
+    // ------------------------
+    // Change selection
+    // ------------------------
     function changeSelection(change:Int = 0)
     {
-        curSelected += change;
-        if (curSelected < 0) curSelected = options.length - 1;
-        if (curSelected >= options.length) curSelected = 0;
+        curSelected = FlxMath.wrap(curSelected + change, 0, options.length - 1);
 
         for (i in 0...grpOptions.members.length)
         {
-            var item:FlxText = cast grpOptions.members[i];
-            var yPos:Int = Std.int((FlxG.height/2) + (i - curSelected) * 90);
-            item.y = yPos;
+            var item:Alphabet = cast grpOptions.members[i];
+            item.y = Std.int((FlxG.height / 2) + (i - curSelected) * 60);
             item.alpha = (i == curSelected) ? 1 : 0.6;
 
             if (i == curSelected)
             {
-                selectorLeft.x = item.x - 40;
-                selectorLeft.y = item.y;
-                selectorRight.x = item.x + item.width + 15;
-                selectorRight.y = item.y;
+                selectorLeft.x = item.x - 140;
+                selectorLeft.y = item.y + 7;
+                selectorRight.x = item.x + item.width + 35;
+                selectorRight.y = item.y + 7;
+
+                camFollow.setPosition(FlxG.width / 2, item.y);
             }
         }
 
-        camFollow.setPosition(FlxG.width/2, curSelected * 90);
+        FlxG.sound.play(Paths.sound('scrollMenu'), ClientPrefs.data.sfxVolume);
+    }
+
+    // ------------------------
+    // Cleanup
+    // ------------------------
+    override function destroy()
+    {
+        ClientPrefs.loadPrefs();
+        super.destroy();
     }
 }

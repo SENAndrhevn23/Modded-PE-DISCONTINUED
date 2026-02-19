@@ -83,7 +83,3 @@ Your feedback helps improve the engine.
 
 
 
-# WARNING
-
-**You have to compile this source code in order to play** if you see an release in the engine.. its probably like be used for testing the build if it works.. mostly linux build since im an linux user and cant compile an windows build :((
-

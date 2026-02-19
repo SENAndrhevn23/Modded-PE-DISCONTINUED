@@ -50,20 +50,20 @@ class OptionsState extends MusicBeatState
     {
         super.create();
 
-        // STATIC background
+        // STATIC background, attached to default camera
         var bg:FlxSprite = new FlxSprite();
         bg.makeGraphic(FlxG.width, FlxG.height, 0xFF1E1E1E);
-        bg.scrollFactor.set(0, 0); // <-- makes it stay fixed
+        bg.scrollFactor.set(0, 0);  // background will not move
+        bg.cameras = [FlxG.cameras.list[0]];  // attach only to main camera
         add(bg);
 
-        // Cameras and scrolling objects
+        // Objects for menu scrolling
         camFollow = new FlxObject(FlxG.width / 2, FlxG.height / 2, 1, 1);
         camFollowPos = new FlxObject(camFollow.x, camFollow.y, 1, 1);
         add(camFollow);
         add(camFollowPos);
-        FlxG.cameras.list[0].follow(camFollowPos);
 
-        // Options
+        // Options group (scrolling)
         grpOptions = new FlxGroup();
         add(grpOptions);
 
@@ -87,9 +87,10 @@ class OptionsState extends MusicBeatState
     {
         super.update(elapsed);
 
+        // Smooth camera movement for options (does NOT affect background)
         var lerpVal:Float = Math.min(Math.max(elapsed * 7.5, 0), 1);
         camFollowPos.setPosition(
-            FlxMath.lerp(camFollowPos.x, camFollow.x, lerpVal),
+            camFollow.x,
             FlxMath.lerp(camFollowPos.y, camFollow.y, lerpVal)
         );
 
@@ -118,7 +119,7 @@ class OptionsState extends MusicBeatState
                 selectorRight.x = item.x + item.width + 10;
                 selectorRight.y = item.y;
 
-                camFollow.y = item.y; // scroll options without moving background
+                camFollow.y = item.y;  // scroll options independently
             }
         }
         FlxG.sound.play(Paths.sound('scrollMenu'));

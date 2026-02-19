@@ -1,173 +1,141 @@
 package options;
 
 import states.MainMenuState;
-import flixel.FlxObject;
-import flixel.FlxSprite;
-import flixel.FlxCamera;
-import flixel.math.FlxMath;
+import flixel.FlxG;
+import flixel.FlxState;
 import flixel.text.FlxText;
+import flixel.FlxSprite;
 import flixel.group.FlxGroup;
+import flixel.math.FlxMath;
+import flixel.FlxObject;
 
 class OptionsState extends MusicBeatState
 {
-    public static var onPlayState:Bool = false;
-    private static var curSelected:Int = 0;
-
-    private var options:Array<String> = [
+    var options:Array<String> = [
         'Note Colors',
         'Controls',
         'Adjust Delay and Combo',
-        'Video Rendering',
-        'Optimizations',
         'Graphics',
         'Visuals',
         'Gameplay',
-        'V-Slice Options'
+        'V-Slice Options',
+        'Video Rendering',
+        'Optimizations'
     ];
 
-    private var grpOptions:FlxGroup;
-    private var selectorLeft:Alphabet;
-    private var selectorRight:Alphabet;
+    private var grpOptions:FlxGroup; // Use plain FlxGroup for compatibility
+    private static var curSelected:Int = 0;
+    public static var menuBG:FlxSprite;
+    public static var onPlayState:Bool = false;
 
-    private var mainCam:FlxCamera;
-    private var camFollow:FlxObject;
-    private var camFollowPos:FlxObject;
-    public static var funnyCam:FlxCamera;
+    var selectorLeft:Alphabet;
+    var selectorRight:Alphabet;
+    var camFollow:FlxObject;
+    var camFollowPos:FlxObject;
 
-    // ------------------------
-    // Substate handling
-    // ------------------------
-    function openSelectedSubstate(label:String)
-    {
-        switch(label)
-        {
-            case 'Note Colors': openSubState(new options.NotesColorSubState());
-            case 'Controls': openSubState(new options.ControlsSubState());
-            case 'Graphics': openSubState(new options.GraphicsSettingsSubState());
-            case 'Visuals': openSubState(new options.VisualsSettingsSubState());
-            case 'Gameplay': openSubState(new options.GameplaySettingsSubState());
-            case 'Adjust Delay and Combo': MusicBeatState.switchState(new options.NoteOffsetState());
-            case 'Video Rendering': openSubState(new options.GameRendererSettingsSubState());
-            case 'Optimizations': openSubState(new options.OptimizeSettingsSubState());
-            case 'V-Slice Options': openSubState(new BaseGameSubState());
+    function openSelectedSubstate(label:String) {
+        switch(label) {
+            case 'Note Colors':
+                openSubState(new options.NotesColorSubState());
+            case 'Controls':
+                openSubState(new options.ControlsSubState());
+            case 'Graphics':
+                openSubState(new options.GraphicsSettingsSubState());
+            case 'Visuals':
+                openSubState(new options.VisualsSettingsSubState());
+            case 'Gameplay':
+                openSubState(new options.GameplaySettingsSubState());
+            case 'Adjust Delay and Combo':
+                MusicBeatState.switchState(new options.NoteOffsetState());
+            case 'V-Slice Options':
+                openSubState(new BaseGameSubState());
+            case 'Video Rendering':
+                openSubState(new options.GameRendererSettingsSubState());
+            case 'Optimizations':
+                openSubState(new options.OptimizeSettingsSubState());
         }
     }
 
-    // ------------------------
-    // Initialization
-    // ------------------------
     override function create()
     {
         super.create();
 
-        // Cameras
-        mainCam = initPsychCamera();
-        funnyCam = new FlxCamera();
-        funnyCam.bgColor.alpha = 0;
-        FlxG.cameras.add(funnyCam, false);
+        // Background
+        var bg:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, 0xFF1E1E1E);
+        bg.scrollFactor.set(0, 0);
+        add(bg);
 
-        camFollow = new FlxObject(0, 0, 1, 1);
-        camFollowPos = new FlxObject(0, 0, 1, 1);
+        // Cameras for scrolling
+        camFollow = new FlxObject(FlxG.width / 2, FlxG.height / 2, 1, 1);
+        camFollowPos = new FlxObject(camFollow.x, camFollow.y, 1, 1);
         add(camFollow);
         add(camFollowPos);
-        funnyCam.follow(camFollowPos);
 
-        // Background (graphic, not plain grey)
-        var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
-        bg.antialiasing = ClientPrefs.data.antialiasing;
-        bg.color = 0xFFea71fd;
-        bg.updateHitbox();
-        bg.screenCenter();
-        add(bg);
+        FlxG.cameras.list[0].follow(camFollowPos);
 
         // Options
         grpOptions = new FlxGroup();
         add(grpOptions);
 
-        for (i in 0...options.length)
-        {
+        for (i in 0...options.length) {
             var optionText:Alphabet = new Alphabet(0, 0, options[i], true);
-            optionText.setScale(0.75);
             optionText.screenCenter();
-            optionText.y += (60 * (i - (options.length / 2))) + 30;
+            optionText.y += (80 * (i - (options.length / 2))) + 40;
             grpOptions.add(optionText);
         }
 
-        // Selector arrows
-        selectorLeft = new Alphabet(0, 0, ">>>", true);
-        selectorLeft.setScale(0.75);
-        selectorRight = new Alphabet(0, 0, "<<<", true);
-        selectorRight.setScale(0.75);
+        // Selectors
+        selectorLeft = new Alphabet(0, 0, '>', true);
+        selectorRight = new Alphabet(0, 0, '<', true);
         add(selectorLeft);
         add(selectorRight);
 
         changeSelection();
-        ClientPrefs.saveSettings();
     }
 
-    // ------------------------
-    // Update loop
-    // ------------------------
     override function update(elapsed:Float)
     {
         super.update(elapsed);
 
-        // Navigation
+        // Scroll camera smoothly
+        var lerpVal:Float = Math.min(Math.max(elapsed * 7.5, 0), 1);
+        camFollowPos.setPosition(
+            FlxMath.lerp(camFollowPos.x, camFollow.x, lerpVal),
+            FlxMath.lerp(camFollowPos.y, camFollow.y, lerpVal)
+        );
+
         if (controls.UI_UP_P) changeSelection(-1);
         if (controls.UI_DOWN_P) changeSelection(1);
 
-        // Smooth camera follow
-        var lerpVal:Float = Math.max(0, Math.min(1, elapsed * 7.5));
-        camFollowPos.setPosition(FlxG.width / 2, FlxMath.lerp(camFollowPos.y, camFollow.y, lerpVal));
-
-        // Accept / Back
-        if (controls.BACK)
-        {
+        if (controls.BACK) {
             FlxG.sound.play(Paths.sound('cancelMenu'));
-            if (onPlayState)
-            {
-                StageData.loadDirectory(PlayState.SONG);
-                LoadingState.loadAndSwitchState(new PlayState());
-                FlxG.sound.music.volume = 0;
-            }
-            else MusicBeatState.switchState(new MainMenuState());
-        }
-        else if (controls.ACCEPT)
-        {
+            MusicBeatState.switchState(new MainMenuState());
+        } else if (controls.ACCEPT) {
             openSelectedSubstate(options[curSelected]);
         }
     }
 
-    // ------------------------
-    // Change selection
-    // ------------------------
     function changeSelection(change:Int = 0)
     {
         curSelected = FlxMath.wrap(curSelected + change, 0, options.length - 1);
 
-        for (i in 0...grpOptions.members.length)
-        {
+        for (i in 0...grpOptions.members.length) {
             var item:Alphabet = cast grpOptions.members[i];
-            item.y = Std.int((FlxG.height / 2) + (i - curSelected) * 60);
-            item.alpha = (i == curSelected) ? 1 : 0.6;
+            item.alpha = 0.6;
+            if (i == curSelected) {
+                item.alpha = 1;
+                selectorLeft.x = item.x - 50;
+                selectorLeft.y = item.y;
+                selectorRight.x = item.x + item.width + 10;
+                selectorRight.y = item.y;
 
-            if (i == curSelected)
-            {
-                selectorLeft.x = item.x - 140;
-                selectorLeft.y = item.y + 7;
-                selectorRight.x = item.x + item.width + 35;
-                selectorRight.y = item.y + 7;
-
-                camFollow.setPosition(FlxG.width / 2, item.y);
+                // Scroll cam to selection
+                camFollow.y = item.y;
             }
         }
-
-        FlxG.sound.play(Paths.sound('scrollMenu'), ClientPrefs.data.sfxVolume);
+        FlxG.sound.play(Paths.sound('scrollMenu'));
     }
 
-    // ------------------------
-    // Cleanup
-    // ------------------------
     override function destroy()
     {
         ClientPrefs.loadPrefs();

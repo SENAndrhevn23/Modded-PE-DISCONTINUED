@@ -5,6 +5,7 @@ import flixel.input.keyboard.FlxKey;
 import flixel.input.gamepad.FlxGamepadInputID;
 
 import states.TitleState;
+import shaders.RGBShaderReference;
 
 // Add a variable here and it will get automatically saved
 @:structInit class SaveVariables {
@@ -51,8 +52,12 @@ import states.TitleState;
 	public var holdSplashAlpha:Float = 0.6;
 	public var lowQuality:Bool = false;
 	public var shaders:Bool = true;
+
 	public var cacheOnGPU:Bool = #if !switch false #else true #end; //From Stilic
 	public var framerate:Int = 60;
+	
+	// NEW: toggle for RGB note palette / note shader
+	public var noteShader:Bool = true;
 	
 	public var camZooms:Bool = true;
 	public var hideHud:Bool = false;
@@ -218,7 +223,7 @@ class ClientPrefs {
 		'favorite'		=> [],
 		'bar_left'		=> [],
 		'bar_right'		=> [],
-		'char_select'		=> [],
+		'char_select'	=> [],
 
 		'accept'		=> [A, START],
 		'back'			=> [B],
@@ -366,6 +371,13 @@ class ClientPrefs {
 						if(mobileBinds.exists(control)) mobileBinds.set(control, keys);
 			}
 			reloadVolumeKeys();
+		}
+
+		// Apply the noteShader preference immediately (so existing and soon-to-be-created notes respect it)
+		try {
+			RGBShaderReference.setGlobalEnabled(data.noteShader);
+		} catch (e:Dynamic) {
+			// ignore when shader system isn't available
 		}
 	}
 

@@ -2,8 +2,6 @@ package options;
 
 import openfl.system.System;
 import objects.Character;
-import shaders.RGBShaderReference;
-import backend.ClientPrefs;
 
 class GraphicsSettingsSubState extends BaseOptionsMenu
 {
@@ -75,14 +73,6 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 		fpsOption = option;
 		#end
 
-		// NOTE: New option to toggle the RGB note palette / note shader
-		var option:Option = new Option('Note Shader', //Name
-			"If unchecked, disables the RGB note palette shader (affects note graphics only).\nUseful if you want plain notes or need to reduce shader workload.", //Description
-			'noteShader', //Save data variable name
-			BOOL); //Variable type
-		option.onChange = onChangeNoteShader;
-		addOption(option);
-
 		super();
 		insert(1, boyfriend);
 	}
@@ -95,16 +85,6 @@ class GraphicsSettingsSubState extends BaseOptionsMenu
 			if(sprite != null && (sprite is FlxSprite)) {
 				sprite.antialiasing = ClientPrefs.data.antialiasing;
 			}
-		}
-	}
-
-	function onChangeNoteShader()
-	{
-		// Apply the pref immediately to all current note shader refs
-		try {
-			RGBShaderReference.setGlobalEnabled(ClientPrefs.data.noteShader);
-		} catch (e:Dynamic) {
-			// ignore if shader class missing on some build targets
 		}
 	}
 

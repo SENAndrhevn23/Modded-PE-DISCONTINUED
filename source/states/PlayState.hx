@@ -639,63 +639,80 @@ class PlayState extends MusicBeatState
 		uiGroup = new FlxSpriteGroup();
 		add(uiGroup);
 
-// Calculate song position in seconds
-Conductor.songPosition = -Conductor.crochet * 5 + Conductor.offset;
-var showTime:Bool = (ClientPrefs.data.timeBarType != "Disabled");
+class PlayState extends FlxState {
+    public var timeTxt:FlxText;
+    public var timeBar:Bar;
+    public var updateTime:Bool;
 
-// Create the time text
-timeTxt = new FlxText(STRUM_X + (FlxG.width / 2) - 248, 19, 400, "", 32);
-timeTxt.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-timeTxt.scrollFactor.set();
-timeTxt.alpha = 0;
-timeTxt.borderSize = 2;
-timeTxt.antialiasing = ClientPrefs.data.antialiasing;
-timeTxt.visible = updateTime = showTime;
+    override public function create():Void {
+        super.create();
 
-if (ClientPrefs.data.downScroll)
-    timeTxt.y = FlxG.height - 44;
+        // Calculate song position
+        Conductor.songPosition = -Conductor.crochet * 5 + Conductor.offset;
+        updateTime = (ClientPrefs.data.timeBarType != "Disabled");
 
-if (ClientPrefs.data.timeBarType == "Song Name")
-    timeTxt.text = SONG.song;
+        // Create the time text
+        timeTxt = new FlxText(STRUM_X + (FlxG.width / 2) - 248, 19, 400, "", 32);
+        timeTxt.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+        timeTxt.scrollFactor.set();
+        timeTxt.alpha = 0;
+        timeTxt.borderSize = 2;
+        timeTxt.antialiasing = ClientPrefs.data.antialiasing;
+        timeTxt.visible = updateTime;
 
-// TimeBar setup
-timeBar = new Bar(0, timeTxt.y + (timeTxt.height / 4), "timeBar", function() return songPercent, 0, 1);
-timeBar.scrollFactor.set();
-timeBar.screenCenter(X);
-timeBar.alpha = 0;
-timeBar.visible = showTime;
-uiGroup.add(timeBar);
-uiGroup.add(timeTxt);
+        if (ClientPrefs.data.downScroll)
+            timeTxt.y = FlxG.height - 44;
 
-notesGroup.add(strumLineNotes);
+        if (ClientPrefs.data.timeBarType == "Song Name")
+            timeTxt.text = SONG.song;
 
-if (ClientPrefs.data.timeBarType == "Song Name") {
-    timeTxt.size = 24;
-    timeTxt.y += 3;
+        // Create the progress bar
+        timeBar = new Bar(0, timeTxt.y + (timeTxt.height / 4), "timeBar", function() return songPercent, 0, 1);
+        timeBar.scrollFactor.set();
+        timeBar.screenCenter(X);
+        timeBar.alpha = 0;
+        timeBar.visible = updateTime;
+
+        uiGroup.add(timeBar);
+        uiGroup.add(timeTxt);
+        notesGroup.add(strumLineNotes);
+
+        if (ClientPrefs.data.timeBarType == "Song Name") {
+            timeTxt.size = 24;
+            timeTxt.y += 3;
+        }
+    }
+
+    // -----------------------------
+    // Function to update time text
+    // -----------------------------
+    public function updateTimeDisplay():Void {
+        var currentSeconds:Int = Math.floor(Conductor.songPosition / 1000);
+        var totalSeconds:Int = Math.floor(SONG.length / 1000);
+
+        var currentMinutes:Int = Math.floor(currentSeconds / 60);
+        var currentSecs:Int = currentSeconds % 60;
+
+        var totalMinutes:Int = Math.floor(totalSeconds / 60);
+        var totalSecs:Int = totalSeconds % 60;
+
+        var currentStr = Std.string(currentMinutes) + ":" + (currentSecs < 10 ? "0" + currentSecs : currentSecs);
+        var totalStr = Std.string(totalMinutes) + ":" + (totalSecs < 10 ? "0" + totalSecs : totalSecs);
+
+        timeTxt.text = currentStr + "/" + totalStr;
+    }
+
+    override public function update(elapsed:Float):Void {
+        super.update(elapsed);
+
+        // Update the song position
+        Conductor.songPosition = -Conductor.crochet * 5 + Conductor.offset;
+
+        // Update time text
+        if (updateTime)
+            updateTimeDisplay();
+    }
 }
-
-// ----------------------
-// Add this part to update the time text
-// ----------------------
-updateTimeDisplay = function() {
-    var currentSeconds:Int = Math.floor(Conductor.songPosition / 1000);
-    var totalSeconds:Int = Math.floor(SONG.length / 1000);
-
-    var currentMinutes:Int = Math.floor(currentSeconds / 60);
-    var currentSecs:Int = currentSeconds % 60;
-
-    var totalMinutes:Int = Math.floor(totalSeconds / 60);
-    var totalSecs:Int = totalSeconds % 60;
-
-    // Format to mm:ss
-    var currentStr = Std.string(currentMinutes) + ":" + (currentSecs < 10 ? "0" + currentSecs : currentSecs);
-    var totalStr = Std.string(totalMinutes) + ":" + (totalSecs < 10 ? "0" + totalSecs : totalSecs);
-
-    timeTxt.text = currentStr + "/" + totalStr;
-}
-
-// Call this in your update loop
-if (updateTime) updateTimeDisplay();
 
 		generateSong();
 

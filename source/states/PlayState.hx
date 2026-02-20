@@ -2986,7 +2986,7 @@ Average NPS in loading: ${numFormat(notes / takenNoteTime, 3)}');
 			
 			if (healthDrain) {
 				if(!drainAccurated) {
-					health = randomize.bool() ? Math.max(0.1e-320, health * Math.pow(0.99, skipOp)) : health + 0.02 * skipBf;
+					health = randomize.bool() ? Math.max(0.1e-999999, health * Math.pow(0.99, skipOp)) : health + 0.02 * skipBf;
 				} else {
 					var max:Null<Int> = FlxMath.maxInt(skipOp, skipBf);
 					for (i in 0...max) {
@@ -4660,7 +4660,7 @@ Average NPS in loading: ${numFormat(notes / takenNoteTime, 3)}');
 
 		if (!ffmpegMode && opVocal) opponentVocals.volume = ClientPrefs.data.bgmVolume;
 		strumPlayAnim(true, note.noteData);
-		if (healthDrain) health = Math.max(0.1e-320, health * 0.99);
+		if (healthDrain) health = Math.max(0.1e-999999, health * 0.99);
 		note.hitByOpponent = true;
 
 		stagesFunc(stage -> stage.goodNoteHit(note));

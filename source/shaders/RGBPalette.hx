@@ -1,5 +1,8 @@
 package shaders;
 import objects.Note;
+import flixel.FlxSprite;
+import flixel.util.FlxMath;
+import flixel.graphics.shader.FlxShader;
 
 class RGBPalette {
 	public var shader(default, null):RGBPaletteShader = new RGBPaletteShader();

@@ -639,14 +639,6 @@ class PlayState extends MusicBeatState
 		uiGroup = new FlxSpriteGroup();
 		add(uiGroup);
 
-class PlayState extends FlxState {
-    public var timeTxt:FlxText;
-    public var timeBar:Bar;
-    public var updateTime:Bool;
-
-    override public function create():Void {
-        super.create();
-
         // Calculate song position
         Conductor.songPosition = -Conductor.crochet * 5 + Conductor.offset;
         updateTime = (ClientPrefs.data.timeBarType != "Disabled");

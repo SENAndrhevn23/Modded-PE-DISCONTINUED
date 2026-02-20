@@ -14,7 +14,7 @@ class MainMenuState extends MusicBeatState
 	public static var psychEngineVersion:String = '1.0.4'; // This is also used for Discord RPC
 	public static var pSliceVersion:String = '2.2.2'; // Version of P-Slice
 	public static var funkinVersion:String = '0.7.4'; // Version of funkin' we are emulating
-	public static var hrkVersion:String = '0.0.1'; // Version of H-Slice
+	public static var hrkVersion:String = '0.0.2'; // Version of H-Slice
 	public static var curSelected:Int = 0;
 
 	var menuItems:FlxTypedGroup<FlxSprite>;
@@ -98,7 +98,7 @@ class MainMenuState extends MusicBeatState
 		}
 
 		var padding:Float = 8;
-		var hrkVer:FlxText = new FlxText(padding, FlxG.height - 78 - padding, FlxG.width, 'Modded PE v' + hrkVersion, 12);
+		var hrkVer:FlxText = new FlxText(padding, FlxG.height - 78 - padding, FlxG.width, 'Modded PE' + hrkVersion, 12);
 		var psliceVer:FlxText = new FlxText(padding, FlxG.height - 58 - padding, FlxG.width, 'P-Slice v${pSliceVersion}', 12);
 		var psychVer:FlxText = new FlxText(padding, FlxG.height - 38 - padding, FlxG.width, 'Psych Engine v' + psychEngineVersion, 12);
 		var fnfVer:FlxText = new FlxText(padding, FlxG.height - 18 - padding, FlxG.width, 'Friday Night Funkin\' v${funkinVersion}', 12);

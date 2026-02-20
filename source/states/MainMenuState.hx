@@ -11,7 +11,7 @@ import options.OptionsState;
 
 class MainMenuState extends MusicBeatState
 {
-	public static var psychEngineVersion:String = '1.0.4'; // This is also used for Discord RPC
+	public static var psychEngineVersion:String = '1.0.4 (MD-PE: 0.0.2)'; // This is also used for Discord RPC
 	public static var pSliceVersion:String = ''; // Version of P-Slice
 	public static var funkinVersion:String = '0.7.4'; // Version of funkin' we are emulating
 	public static var hrkVersion:String = ''; // Version of H-Slice

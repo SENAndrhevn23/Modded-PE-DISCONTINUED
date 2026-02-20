@@ -639,73 +639,35 @@ class PlayState extends MusicBeatState
 		uiGroup = new FlxSpriteGroup();
 		add(uiGroup);
 
-        // Calculate song position
-        Conductor.songPosition = -Conductor.crochet * 5 + Conductor.offset;
-        updateTime = (ClientPrefs.data.timeBarType != "Disabled");
+		Conductor.songPosition = -Conductor.crochet * 5 + Conductor.offset;
+		var showTime:Bool = (ClientPrefs.data.timeBarType != 'Disabled');
+		timeTxt = new FlxText(STRUM_X + (FlxG.width / 2) - 248, 19, 400, "", 32);
+		timeTxt.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		timeTxt.scrollFactor.set();
+		timeTxt.alpha = 0;
+		timeTxt.borderSize = 2;
+		timeTxt.antialiasing = ClientPrefs.data.antialiasing;
+		timeTxt.visible = updateTime = showTime;
+		if (ClientPrefs.data.downScroll)
+			timeTxt.y = FlxG.height - 44;
+		if (ClientPrefs.data.timeBarType == 'Song Name')
+			timeTxt.text = SONG.song;
 
-        // Create the time text
-        timeTxt = new FlxText(STRUM_X + (FlxG.width / 2) - 248, 19, 400, "", 32);
-        timeTxt.setFormat(Paths.font("vcr.ttf"), 32, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
-        timeTxt.scrollFactor.set();
-        timeTxt.alpha = 0;
-        timeTxt.borderSize = 2;
-        timeTxt.antialiasing = ClientPrefs.data.antialiasing;
-        timeTxt.visible = updateTime;
+		timeBar = new Bar(0, timeTxt.y + (timeTxt.height / 4), 'timeBar', function() return songPercent, 0, 1);
+		timeBar.scrollFactor.set();
+		timeBar.screenCenter(X);
+		timeBar.alpha = 0;
+		timeBar.visible = showTime;
+		uiGroup.add(timeBar);
+		uiGroup.add(timeTxt);
 
-        if (ClientPrefs.data.downScroll)
-            timeTxt.y = FlxG.height - 44;
+		notesGroup.add(strumLineNotes);
 
-        if (ClientPrefs.data.timeBarType == "Song Name")
-            timeTxt.text = SONG.song;
-
-        // Create the progress bar
-        timeBar = new Bar(0, timeTxt.y + (timeTxt.height / 4), "timeBar", function() return songPercent, 0, 1);
-        timeBar.scrollFactor.set();
-        timeBar.screenCenter(X);
-        timeBar.alpha = 0;
-        timeBar.visible = updateTime;
-
-        uiGroup.add(timeBar);
-        uiGroup.add(timeTxt);
-        notesGroup.add(strumLineNotes);
-
-        if (ClientPrefs.data.timeBarType == "Song Name") {
-            timeTxt.size = 24;
-            timeTxt.y += 3;
-        }
-    }
-
-    // -----------------------------
-    // Function to update time text
-    // -----------------------------
-    public function updateTimeDisplay():Void {
-        var currentSeconds:Int = Math.floor(Conductor.songPosition / 1000);
-        var totalSeconds:Int = Math.floor(SONG.length / 1000);
-
-        var currentMinutes:Int = Math.floor(currentSeconds / 60);
-        var currentSecs:Int = currentSeconds % 60;
-
-        var totalMinutes:Int = Math.floor(totalSeconds / 60);
-        var totalSecs:Int = totalSeconds % 60;
-
-        var currentStr = Std.string(currentMinutes) + ":" + (currentSecs < 10 ? "0" + currentSecs : currentSecs);
-        var totalStr = Std.string(totalMinutes) + ":" + (totalSecs < 10 ? "0" + totalSecs : totalSecs);
-
-        timeTxt.text = currentStr + "/" + totalStr;
-    }
-
-    override public function update(elapsed:Float):Void {
-        super.update(elapsed);
-
-        // Update the song position
-        Conductor.songPosition = -Conductor.crochet * 5 + Conductor.offset;
-
-        // Update time text
-        if (updateTime)
-            updateTimeDisplay();
-    }
-}
-
+		if (ClientPrefs.data.timeBarType == 'Song Name')
+		{
+			timeTxt.size = 24;
+			timeTxt.y += 3;
+		}
 		generateSong();
 
 		notesGroup.add(grpNoteSplashes);

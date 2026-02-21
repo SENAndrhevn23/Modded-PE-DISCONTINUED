@@ -1,133 +1,244 @@
 package options;
 
 import states.MainMenuState;
-import flixel.FlxG;
-import flixel.FlxState;
-import flixel.text.FlxText;
-import flixel.FlxSprite;
-import flixel.group.FlxGroup;
-import flixel.math.FlxMath;
+import backend.StageData;
 import flixel.FlxObject;
+#if (target.threaded)
+import sys.thread.Mutex;
+import sys.thread.Thread;
+#end
+
+#if android
+import mobile.options.MobileOptionsSubState;
+#end
 
 class OptionsState extends MusicBeatState
 {
-    var options:Array<String> = [
-        'Note Colors',
-        'Controls',
-        'Adjust Delay and Combo',
-        'Graphics',
-        'Visuals',
-        'Gameplay',
-        'V-Slice Options',
-        'Video Rendering',
-        'Optimizations'
-    ];
+	var options:Array<String> = [
+		'Note Colors',
+		'Controls',
+		'Adjust Delay and Combo',
+		#if desktop 'Video Rendering', #end
+		'Optimizations',
+		'Graphics',
+		'Visuals',
+		'Gameplay',
+		'V-Slice Options',
+		#if TRANSLATIONS_ALLOWED 'Language', #end
+		#if (TOUCH_CONTROLS_ALLOWED || mobile) 'Mobile Options' #end
+	];
+	private var grpOptions:FlxTypedGroup<Alphabet>;
+	private static var curSelected:Int = 0;
+	public static var menuBG:FlxSprite;
+	public static var onPlayState:Bool = false;
+	#if (target.threaded) var mutex:Mutex = new Mutex(); #end
 
-    private var grpOptions:FlxGroup;
-    private static var curSelected:Int = 0;
-    public static var onPlayState:Bool = false;
+	private var mainCam:FlxCamera;
+	private var camFollow:FlxObject;
+	private var camFollowPos:FlxObject;
+	public static var funnyCam:FlxCamera;
 
-    var selectorLeft:Alphabet;
-    var selectorRight:Alphabet;
-    var camFollow:FlxObject;
-    var camFollowPos:FlxObject;
+	function openSelectedSubstate(label:String) {
+		if (label != "Adjust Delay and Combo")
+			persistentUpdate = false;
 
-    function openSelectedSubstate(label:String) {
-        switch(label) {
-            case 'Note Colors': openSubState(new options.NotesColorSubState());
-            case 'Controls': openSubState(new options.ControlsSubState());
-            case 'Graphics': openSubState(new options.GraphicsSettingsSubState());
-            case 'Visuals': openSubState(new options.VisualsSettingsSubState());
-            case 'Gameplay': openSubState(new options.GameplaySettingsSubState());
-            case 'Adjust Delay and Combo': MusicBeatState.switchState(new options.NoteOffsetState());
-            case 'V-Slice Options': openSubState(new BaseGameSubState());
-            case 'Video Rendering': openSubState(new options.GameRendererSettingsSubState());
-            case 'Optimizations': openSubState(new options.OptimizeSettingsSubState());
-        }
-    }
+		switch(label)
+		{
+			case 'Note Colors':
+				openSubState(new options.NotesColorSubState());
+			case 'Controls':
+				if (controls.mobileC)
+				{
+					persistentUpdate = true;
+					FlxG.sound.play(Paths.sound('cancelMenu'));
+				}
+				else
+					openSubState(new options.ControlsSubState());
+			#if desktop
+			case 'Video Renderimg':
+				openSubState(new options.GameRendererSettingsSubState());
+			#end
+			case 'Optimizations':
+				openSubState(new options.OptimizeSettingsSubState());
+			case 'Graphics':
+				openSubState(new options.GraphicsSettingsSubState());
+			case 'Visuals':
+				openSubState(new options.VisualsSettingsSubState());
+			case 'Gameplay':
+				openSubState(new options.GameplaySettingsSubState());
+			case 'Adjust Delay and Combo':
+				MusicBeatState.switchState(new options.NoteOffsetState());
+			case 'V-Slice Options':
+				openSubState(new BaseGameSubState());
+			#if (TOUCH_CONTROLS_ALLOWED || mobile)
+			case 'Mobile Options':
+				openSubState(new mobile.options.MobileOptionsSubState());
+			#end
+			case 'Language':
+				openSubState(new options.LanguageSubState());
+		}
+	}
 
-    override function create()
-    {
-        super.create();
+	var selectorLeft:Alphabet;
+	var selectorRight:Alphabet;
 
-        // STATIC background, attached to default camera
-        var bg:FlxSprite = new FlxSprite();
-        bg.makeGraphic(FlxG.width, FlxG.height, 0xFF1E1E1E);
-        bg.scrollFactor.set(0, 0);  // background will not move
-        bg.cameras = [FlxG.cameras.list[0]];  // attach only to main camera
-        add(bg);
+	override function create()
+	{
+		mainCam = initPsychCamera();
+		funnyCam = new FlxCamera();
+		funnyCam.bgColor.alpha = 0;
+		FlxG.cameras.add(funnyCam, false);
 
-        // Objects for menu scrolling
-        camFollow = new FlxObject(FlxG.width / 2, FlxG.height / 2, 1, 1);
-        camFollowPos = new FlxObject(camFollow.x, camFollow.y, 1, 1);
-        add(camFollow);
-        add(camFollowPos);
+		camFollow = new FlxObject(0, 0, 1, 1);
+		camFollowPos = new FlxObject(0, 0, 1, 1);
+		add(camFollow);
+		add(camFollowPos);
+		FlxG.cameras.list[FlxG.cameras.list.indexOf(funnyCam)].follow(camFollowPos);
 
-        // Options group (scrolling)
-        grpOptions = new FlxGroup();
-        add(grpOptions);
+		#if DISCORD_ALLOWED
+		DiscordClient.changePresence("Options Menu", null);
+		#end
 
-        for (i in 0...options.length) {
-            var optionText:Alphabet = new Alphabet(0, 0, options[i], true);
-            optionText.screenCenter();
-            optionText.y += (80 * (i - (options.length / 2))) + 40;
-            grpOptions.add(optionText);
-        }
+		var bg:FlxSprite = new FlxSprite().loadGraphic(Paths.image('menuDesat'));
+		bg.antialiasing = ClientPrefs.data.antialiasing;
+		bg.color = 0xFFea71fd;
+		bg.updateHitbox();
 
-        // Selectors
-        selectorLeft = new Alphabet(0, 0, '>', true);
-        selectorRight = new Alphabet(0, 0, '<', true);
-        add(selectorLeft);
-        add(selectorRight);
+		bg.screenCenter();
+		add(bg);
 
-        changeSelection();
-    }
+		grpOptions = new FlxTypedGroup<Alphabet>();
+		add(grpOptions);
 
-    override function update(elapsed:Float)
-    {
-        super.update(elapsed);
+		for (num => option in options)
+		{
+			var optionText:Alphabet = new Alphabet(0, 0, Language.getPhrase('options_$option', option), true);
+			optionText.setScale(0.75);
+			optionText.screenCenter();
+			optionText.y += (60 * (num - (options.length / 2))) + 30;
+			grpOptions.add(optionText);
+		}
 
-        // Smooth camera movement for options (does NOT affect background)
-        var lerpVal:Float = Math.min(Math.max(elapsed * 7.5, 0), 1);
-        camFollowPos.setPosition(
-            camFollow.x,
-            FlxMath.lerp(camFollowPos.y, camFollow.y, lerpVal)
-        );
+		selectorLeft = new Alphabet(0, 0, '>>>', true);
+		selectorLeft.alignment = RIGHT;
+		selectorLeft.setScale(2/3);
+		add(selectorLeft);
+		selectorRight = new Alphabet(0, 0, '<<<', true);
+		selectorRight.setScale(2/3);
+		add(selectorRight);
 
-        if (controls.UI_UP_P) changeSelection(-1);
-        if (controls.UI_DOWN_P) changeSelection(1);
+		changeSelection();
+		ClientPrefs.saveSettings();
+		
+		// Get this setting in this timing
+		#if android MobileOptionsSubState.lastStorageType = ClientPrefs.data.storageType; #end
 
-        if (controls.BACK) {
-            FlxG.sound.play(Paths.sound('cancelMenu'));
-            MusicBeatState.switchState(new MainMenuState());
-        } else if (controls.ACCEPT) {
-            openSelectedSubstate(options[curSelected]);
-        }
-    }
+		#if (target.threaded)
+		Thread.create(()->{
+			mutex.acquire();
 
-    function changeSelection(change:Int = 0)
-    {
-        curSelected = FlxMath.wrap(curSelected + change, 0, options.length - 1);
+			for (music in VisualsSettingsSubState.pauseMusics)
+			{
+				if (music.toLowerCase() != "none")
+					Paths.music(Paths.formatToSongPath(music));
+			}
 
-        for (i in 0...grpOptions.members.length) {
-            var item:Alphabet = cast grpOptions.members[i];
-            item.alpha = 0.6;
-            if (i == curSelected) {
-                item.alpha = 1;
-                selectorLeft.x = item.x - 50;
-                selectorLeft.y = item.y;
-                selectorRight.x = item.x + item.width + 10;
-                selectorRight.y = item.y;
+			mutex.release();
+		});
+		#end
 
-                camFollow.y = item.y;  // scroll options independently
-            }
-        }
-        FlxG.sound.play(Paths.sound('scrollMenu'));
-    }
+		#if TOUCH_CONTROLS_ALLOWED
+		addTouchPad('UP_DOWN', 'A_B');
+		#end
+		
+		super.create();
+	}
 
-    override function destroy()
-    {
-        ClientPrefs.loadPrefs();
-        super.destroy();
-    }
+	override function closeSubState()
+	{
+		super.closeSubState();
+		ClientPrefs.saveSettings();
+		#if DISCORD_ALLOWED
+		DiscordClient.changePresence("Options Menu", null);
+		#end
+		controls.isInSubstate = false;
+		persistentUpdate = funnyCam.visible = true;
+		
+		#if TOUCH_CONTROLS_ALLOWED
+		removeTouchPad();
+		addTouchPad('UP_DOWN', 'A_B');
+		#end
+	}
+
+	override function update(elapsed:Float) {
+		super.update(elapsed);
+
+		if (controls.UI_UP_P)
+			changeSelection(-1);
+		if (controls.UI_DOWN_P)
+			changeSelection(1);
+
+		var lerpVal:Float = Math.max(0, Math.min(1, elapsed * 7.5));
+		camFollowPos.setPosition(635, FlxMath.lerp(camFollowPos.y, camFollow.y, lerpVal));
+
+		var bullShit:Int = 0;
+
+		for (item in grpOptions.members)
+		{
+			item.targetY = bullShit - curSelected;
+			bullShit++;
+
+			var thing:Float = 0;
+			if (item.targetY == 0) {
+				if(grpOptions.members.length > 6) {
+					thing = grpOptions.members.length * 2;
+				}
+				camFollow.setPosition(635, item.getGraphicMidpoint().y + 100 - thing);
+			}
+		}
+
+		if (controls.BACK)
+		{
+			FlxG.sound.play(Paths.sound('cancelMenu'), ClientPrefs.data.sfxVolume);
+			if(onPlayState)
+			{
+				StageData.loadDirectory(PlayState.SONG);
+				LoadingState.loadAndSwitchState(new PlayState());
+				FlxG.sound.music.volume = 0;
+			}
+			else MusicBeatState.switchState(new MainMenuState());
+		}
+		else if (controls.ACCEPT) openSelectedSubstate(options[curSelected]);
+	}
+	
+	function changeSelection(change:Int = 0)
+	{
+		curSelected = FlxMath.wrap(curSelected + change, 0, options.length - 1);
+
+		for (num => item in grpOptions.members)
+		{
+			item.targetY = num - curSelected;
+			item.alpha = 0.6;
+			if (item.targetY == 0)
+			{
+				item.alpha = 1;
+				selectorLeft.x = item.x - 140;
+				selectorLeft.y = item.y + 7;
+				selectorRight.x = item.x + item.width + 35;
+				selectorRight.y = item.y + 7;
+			}
+		}
+		FlxG.sound.play(Paths.sound('scrollMenu'), ClientPrefs.data.sfxVolume);
+	}
+
+	override function destroy()
+	{
+		ClientPrefs.loadPrefs();
+		if (!ClientPrefs.data.disableGC && !MemoryUtil.isGcEnabled) {
+			MemoryUtil.enable();
+			MemoryUtil.collect(true);
+			MemoryUtil.compact();
+		}
+		super.destroy();
+	}
 }

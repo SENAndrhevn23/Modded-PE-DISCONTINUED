@@ -1,3 +1,12 @@
+# Discontinued cause of drama
+sorry im leaving the community cause all of you guys hate me :((
+
+
+
+
+
+
+
 # Modded Psych Engine (MODDED-PE) SHJR
 
 **Modded Psych Engine** is a small custom engine created for handling **very large charts**, similar to engines such as H-SLICE-JS and JS Engine.

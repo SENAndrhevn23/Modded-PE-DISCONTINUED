@@ -1,17 +1,21 @@
-# Discontinued cause of drama
-sorry im leaving the community cause all of you guys hate me :((
+# 🛑 Project Status: Discontinued
 
+This project has been **discontinued** and the repository is archived.  
+No further updates, fixes, or support will be provided.
 
+The decision to discontinue was made due to ongoing harassment, misinformation, and repeated escalation of community drama, which made continuing development no longer healthy or productive.
 
+This engine is provided **as-is** for reference and educational purposes.
 
+Thank you to everyone who supported, tested, or gave constructive feedback.
 
-
+---
 
 # Modded Psych Engine (MODDED-PE) SHJR
 
-**Modded Psych Engine** is a small custom engine created for handling **very large charts**, similar to engines such as H-SLICE-JS and JS Engine.
+**Modded Psych Engine** is a small custom engine created for handling **very large charts**, inspired by high-performance engines such as H-SLICE-JS and JS Engine.
 
-This engine is focused on performance, optimizations, and advanced chart handling.
+This engine focuses on **performance**, **optimizations**, and **advanced chart handling**.
 
 ---
 
@@ -28,7 +32,7 @@ Currently **NOT supported**:
 
 ## ✨ Features
 
-- ⚡ **Optimizations** for large charts  
+- ⚡ **Optimizations** for extremely large charts  
 - 🎥 **Video Rendering** *(FFMPEG required)*  
 - 🔧 **V-Slice Settings**
 
@@ -36,15 +40,13 @@ Currently **NOT supported**:
 
 ## 🔗 Association Notice
 
-This engine is **NOT associated** with **H-Slice** in any way.
+This engine is **NOT associated** with **H-Slice** or its developers in any way.
 
 ---
 
 ## 📜 Usage & Credit
 
-If you use **MODDED-PE** or add features from this engine into your own project, **please credit**:
-
-
+If you use **MODDED-PE** or incorporate parts of this engine into your own project, **proper credit is required**.
 
 ---
 
@@ -65,18 +67,14 @@ If you use **MODDED-PE** or add features from this engine into your own project,
 ## 📅 Engine Info
 
 - **Creation Date**: 2026-02-14  
-- **Last Update**: ????-??-??
+- **Last Update**: Discontinued  
 
 ---
 
 ## 🐞 Testing & Bug Reports
 
-If you want to be a **tester** for this engine, feel free to:
-- Test performance
-- Report bugs
-- Open issues with detailed information In Github Issue Tab
-
-Your feedback helps improve the engine.
+This project is archived.  
+Issues may remain open for reference, but no fixes will be provided.
 
 ---
 
@@ -85,10 +83,8 @@ Your feedback helps improve the engine.
 - Designed for **advanced users**
 - Large charts may require tuning settings for best performance
 - FFMPEG is required for video features
+- Repository is **read-only**
 
 ---
 
 **MODDED-PE** — built for heavy charts 🚀
-
-
-

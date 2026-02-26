@@ -1,15 +1,3 @@
-# 🛑 Project Status: Discontinued
-
-This project has been **discontinued** and the repository is archived.  
-No further updates, fixes, or support will be provided.
-
-The decision to discontinue was made due to ongoing harassment, misinformation, and repeated escalation of community drama, which made continuing development no longer healthy or productive.
-
-This engine is provided **as-is** for reference and educational purposes.
-
-Thank you to everyone who supported, tested, or gave constructive feedback.
-
----
 
 # Modded Psych Engine (MODDED-PE) SHJR
 

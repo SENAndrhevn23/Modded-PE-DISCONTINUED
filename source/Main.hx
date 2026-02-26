@@ -4,7 +4,6 @@ import lime.ui.WindowAttributes;
 import debug.FPSBg;
 import debug.FPSCounter;
 
-import flixel.graphics.FlxGraphic;
 import flixel.FlxGame;
 import flixel.FlxG;
 import flixel.FlxState;
@@ -25,12 +24,9 @@ import lime.graphics.Image;
 ')
 #end
 
-#if windows
-// Windows-specific includes can go here
-#end
-
 class Main extends Sprite
 {
+    // Game config
     var game = {
         width: 1280,
         height: 720,
@@ -41,12 +37,12 @@ class Main extends Sprite
         startFullscreen: false
     };
 
+    // Debug tools
     public static var fpsBg:FPSBg;
     public static var fpsVar:FPSCounter;
     public static var debugBuild:Bool;
     public static var isConsoleAvailable:Bool = true;
 
-    // Platform string for desktops only
     public static final platform:String = "PCs";
 
     public static function main():Void
@@ -81,17 +77,21 @@ class Main extends Sprite
 
     private function setupGame():Void
     {
-        if (game.zoom == -1.0)
-            game.zoom = 1.0;
+        // Ensure zoom is sane
+        if (game.zoom == -1.0) game.zoom = 1.0;
 
-        Mods.loadTopMod();
+        // --- PRELOADING PHASE ---
+        preloadAssets();
 
+        // Bind save and load highscore
         FlxG.save.bind('funkin', CoolUtil.getSavePath());
         Highscore.load();
 
+        // Initialize controls
         Controls.instance = new Controls();
         ClientPrefs.loadDefaultKeys();
 
+        // --- GAME OBJECT ---
         var gameObject = new FlxGame(
             game.width, game.height,
             game.initialState,
@@ -104,6 +104,7 @@ class Main extends Sprite
 
         addChild(gameObject);
 
+        // --- DEBUG OVERLAY ---
         fpsBg = new FPSBg();
         fpsVar = new FPSCounter(6, 1, 0xFFFFFF);
         addChild(fpsBg);
@@ -111,11 +112,14 @@ class Main extends Sprite
 
         Lib.current.stage.align = "tl";
         Lib.current.stage.scaleMode = StageScaleMode.NO_SCALE;
-        if(fpsVar != null) fpsVar.visible = ClientPrefs.data.showFPS;
-        if(fpsBg != null) fpsBg.visible = ClientPrefs.data.showFPS;
 
-        FlxG.fixedTimestep = false;
-        FlxG.game.focusLostFramerate = 60;
+        fpsVar.visible = ClientPrefs.data.showFPS;
+        fpsBg.visible = ClientPrefs.data.showFPS;
+
+        // --- PERFORMANCE SETTINGS ---
+        FlxG.fixedTimestep = true;            // Fixed timestep = smoother physics
+        FlxG.fixedTimestepStep = 1.0/60.0;
+        FlxG.game.focusLostFramerate = 60;   // Maintain FPS when unfocused
 
         FlxG.signals.gameResized.add(function(w, h)
         {
@@ -129,6 +133,32 @@ class Main extends Sprite
         });
     }
 
+    /**
+     * Preloads all assets, mods, and sounds to prevent runtime stutter
+     */
+    private function preloadAssets():Void
+    {
+        // Load top mod
+        Mods.loadTopMod();
+
+        // Preload essential textures
+        Assets.loadBitmapData("assets/images/characters.png", null, true);
+        Assets.loadBitmapData("assets/images/backgrounds.png", null, true);
+
+        // Preload sounds
+        Assets.loadSound("assets/sounds/music1.ogg", true);
+        Assets.loadSound("assets/sounds/music2.ogg", true);
+
+        // Preload fonts (if any)
+        Assets.loadFont("assets/fonts/gameFont.ttf");
+
+        // Optional: preload object pools (notes, enemies, etc.)
+        PoolManager.init();
+    }
+
+    /**
+     * Resets cached bitmap data for smooth rendering after resize
+     */
     static function resetSpriteCache(sprite:Sprite):Void
     {
         @:privateAccess {
